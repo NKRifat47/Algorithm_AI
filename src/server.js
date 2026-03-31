@@ -36,10 +36,7 @@ startServer();
  * 🔴 Unhandled Promise Rejection
  */
 process.on("unhandledRejection", async (err) => {
-  console.error(
-    "Unhandled Rejection Detected... server shutting down...",
-    err
-  );
+  console.error("Unhandled Rejection Detected... server shutting down...", err);
 
   if (server) {
     server.close(async () => {
@@ -56,10 +53,7 @@ process.on("unhandledRejection", async (err) => {
  * 🔴 Uncaught Exception
  */
 process.on("uncaughtException", async (err) => {
-  console.error(
-    "Uncaught Exception Detected... server shutting down...",
-    err
-  );
+  console.error("Uncaught Exception Detected... server shutting down...", err);
 
   if (server) {
     server.close(async () => {

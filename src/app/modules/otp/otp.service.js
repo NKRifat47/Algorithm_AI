@@ -12,7 +12,6 @@ const OTP_EXPIRATION = 2 * 60; // 2 minutes
 const generateOtp = (length = 6) =>
   crypto.randomInt(10 ** (length - 1), 10 ** length).toString();
 
-
 export const OtpService = {
   // ✅ Send OTP
   sendOtp: async (prisma, email, name) => {
@@ -141,7 +140,7 @@ export const OtpService = {
     const resetToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       envVars.JWT_SECRET_TOKEN,
-      { expiresIn: "10m" }
+      { expiresIn: "10m" },
     );
 
     await prisma.user.update({

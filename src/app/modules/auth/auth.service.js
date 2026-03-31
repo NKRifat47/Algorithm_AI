@@ -8,7 +8,6 @@ import prisma from "../../prisma/client.js";
 import { OtpService } from "../otp/otp.service.js";
 
 export const AuthService = {
-
   findByEmail: async (prisma, email) =>
     prisma.user.findUnique({ where: { email } }),
   findByUsername: async (prisma, username) =>
@@ -31,14 +30,14 @@ export const AuthService = {
     if (!user.forgotPasswordStatus) {
       throw new DevBuildError(
         "Please verify your forgot password OTP first",
-        StatusCodes.FORBIDDEN
+        StatusCodes.FORBIDDEN,
       );
     }
 
     // 3️⃣ Hash new password
     const hashedPassword = await bcrypt.hash(
       newPassword,
-      Number(envVars.BCRYPT_SALT_ROUND || 10)
+      Number(envVars.BCRYPT_SALT_ROUND || 10),
     );
 
     // 4️⃣ Update password
@@ -67,7 +66,7 @@ export const AuthService = {
     if (!user.passwordHash) {
       throw new DevBuildError(
         "Social login users cannot change password this way. Please set a password first or use forgot password.",
-        StatusCodes.BAD_REQUEST
+        StatusCodes.BAD_REQUEST,
       );
     }
 
@@ -80,7 +79,7 @@ export const AuthService = {
     // 4. Hash new password
     const hashedPassword = await bcrypt.hash(
       newPassword,
-      Number(envVars.BCRYPT_SALT_ROUND || 10)
+      Number(envVars.BCRYPT_SALT_ROUND || 10),
     );
 
     // 5. Update password

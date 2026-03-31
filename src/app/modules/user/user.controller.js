@@ -1,4 +1,3 @@
-
 import { createUserService, UserService } from "./user.service.js";
 
 import { StatusCodes } from "http-status-codes";
@@ -6,13 +5,14 @@ import { sendResponse } from "../../utils/sendResponse.js";
 import DevBuildError from "../../lib/DevBuildError.js";
 import prisma from "../../prisma/client.js";
 
-
 const registerUser = async (req, res, next) => {
   try {
-    const picture = req.file ? {
-      url: `${req.protocol}://${req.get('host')}/uploads/avatars/${req.file.filename}`,
-      path: `uploads/avatars/${req.file.filename}`
-    } : null;
+    const picture = req.file
+      ? {
+          url: `${req.protocol}://${req.get("host")}/uploads/avatars/${req.file.filename}`,
+          path: `uploads/avatars/${req.file.filename}`,
+        }
+      : null;
     const payload = {
       prisma,
       ...req.body,
@@ -50,8 +50,6 @@ const getUserInfo = async (req, res, next) => {
     next(error);
   }
 };
-
-
 
 // User details by ID
 const userDetails = async (req, res, next) => {
@@ -106,7 +104,7 @@ const updateProfile = async (req, res, next) => {
     // Handle profile picture update if a new file is uploaded
     if (req.file) {
       const avatarUrlPath = `uploads/avatars/${req.file.filename}`;
-      const avatarUrl = `${req.protocol}://${req.get('host')}/${avatarUrlPath}`;
+      const avatarUrl = `${req.protocol}://${req.get("host")}/${avatarUrlPath}`;
       allowedUpdates.avatarUrl = avatarUrl;
       allowedUpdates.avatarUrlPath = avatarUrlPath;
     }
@@ -131,7 +129,7 @@ const updateUser = async (req, res, next) => {
   try {
     const { userId, ...data } = req.body;
 
-    // This is a generic update, typically for ADMIN use. 
+    // This is a generic update, typically for ADMIN use.
     // For self-update, use updateProfile.
 
     if (!userId) {
@@ -163,8 +161,13 @@ const uploadAvatar = async (req, res, next) => {
     }
 
     const avatarUrlPath = `uploads/avatars/${req.file.filename}`;
-    const avatarUrl = `${req.protocol}://${req.get('host')}/${avatarUrlPath}`;
-    const result = await UserService.updateAvatar(prisma, id, avatarUrl, avatarUrlPath);
+    const avatarUrl = `${req.protocol}://${req.get("host")}/${avatarUrlPath}`;
+    const result = await UserService.updateAvatar(
+      prisma,
+      id,
+      avatarUrl,
+      avatarUrlPath,
+    );
 
     sendResponse(res, {
       success: true,
@@ -177,4 +180,12 @@ const uploadAvatar = async (req, res, next) => {
   }
 };
 
-export const UserController = { registerUser, userDetails, getAllUsersWithProfile, updateUser, getUserInfo, uploadAvatar, updateProfile };
+export const UserController = {
+  registerUser,
+  userDetails,
+  getAllUsersWithProfile,
+  updateUser,
+  getUserInfo,
+  uploadAvatar,
+  updateProfile,
+};

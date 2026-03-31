@@ -9,8 +9,6 @@ import { router } from "./app/router/index.js";
 import passport from "passport";
 import "./app/config/passport.config.js";
 
-
-
 dotenv.config();
 
 const app = express();
@@ -37,5 +35,3 @@ app.use(notFound);
 app.use(globalErrorHandler);
 
 export default app;
-
-

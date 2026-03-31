@@ -8,22 +8,34 @@ import validateRequest from "../../middleware/validateRequest.js";
 import { AuthValidation } from "./auth.validation.js";
 
 const router = express.Router();
-router.post("/login", validateRequest(AuthValidation.loginSchema), AuthController.credentialLogin);
+router.post(
+  "/login",
+  validateRequest(AuthValidation.loginSchema),
+  AuthController.credentialLogin,
+);
 router.post("/refresh-token", AuthController.getNewAccessToken);
 router.post("/logout", AuthController.logout);
-router.post("/forgot-password", validateRequest(AuthValidation.forgotPasswordSchema), AuthController.forgotPassword);
-router.post("/verify-forgot-password-otp", validateRequest(AuthValidation.verifyForgotPasswordOtpSchema), AuthController.verifyForgotPasswordOtp);
+router.post(
+  "/forgot-password",
+  validateRequest(AuthValidation.forgotPasswordSchema),
+  AuthController.forgotPassword,
+);
+router.post(
+  "/verify-forgot-password-otp",
+  validateRequest(AuthValidation.verifyForgotPasswordOtpSchema),
+  AuthController.verifyForgotPasswordOtp,
+);
 router.post(
   "/reset-password",
   checkAuthMiddleware(...Object.values(Role)),
   validateRequest(AuthValidation.resetPasswordSchema),
-  AuthController.resetPassword
+  AuthController.resetPassword,
 );
 router.post(
   "/change-password",
   checkAuthMiddleware(...Object.values(Role)),
   validateRequest(AuthValidation.changePasswordSchema),
-  AuthController.changePassword
+  AuthController.changePassword,
 );
 // Google login
 router.get("/google/url", AuthController.getGoogleUrl);
@@ -48,7 +60,7 @@ router.get(
     session: false,
     failureRedirect: `${envVars.FRONT_END_URL}/login?error=Google login failed&isError=true`,
   }),
-  AuthController.googleCallback
+  AuthController.googleCallback,
 );
 
 export const AuthRouter = router;

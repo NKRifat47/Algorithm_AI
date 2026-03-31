@@ -3,11 +3,6 @@ import { AuthRouter } from "../modules/auth/auth.route.js";
 import { OtpRouter } from "../modules/otp/otp.route.js";
 import { UserRoutes } from "../modules/user/user.route.js";
 
-
-
-
-
-
 export const router = Router();
 const moduleRoutes = [
   {
@@ -21,8 +16,7 @@ const moduleRoutes = [
   {
     path: "/otp",
     route: OtpRouter,
-  }
-
+  },
 ];
 
 moduleRoutes.forEach((route) => {

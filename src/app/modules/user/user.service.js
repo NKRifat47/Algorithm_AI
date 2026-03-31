@@ -4,7 +4,6 @@ import bcrypt from "bcrypt";
 import { Role } from "../../utils/role.js";
 
 export const UserService = {
-
   // BASIC FIND METHODS
 
   findByEmail: async (prisma, email) =>
@@ -13,9 +12,7 @@ export const UserService = {
   findByUsername: async (prisma, username) =>
     prisma.user.findUnique({ where: { username } }),
 
-  findById: async (prisma, id) =>
-    prisma.user.findUnique({ where: { id } }),
-
+  findById: async (prisma, id) => prisma.user.findUnique({ where: { id } }),
 
   // ✅ ONLY USER INFO (NO PROFILE)
 
@@ -34,7 +31,6 @@ export const UserService = {
       },
     }),
 
-
   // UPDATE / DELETE
 
   update: async (prisma, id, data) =>
@@ -48,7 +44,6 @@ export const UserService = {
       where: { id },
     }),
 
-
   // USER + FULL PROFILE
 
   findByIdWithProfile: async (prisma, id) =>
@@ -56,8 +51,7 @@ export const UserService = {
       where: { id },
     }),
 
-  findAllWithProfile: async (prisma) =>
-    prisma.user.findMany({}),
+  findAllWithProfile: async (prisma) => prisma.user.findMany({}),
 
   updateAvatar: async (prisma, id, avatarUrl, avatarUrlPath) =>
     prisma.user.update({
@@ -65,7 +59,6 @@ export const UserService = {
       data: { avatarUrl, avatarUrlPath },
     }),
 };
-
 
 export const createUserService = async (payload) => {
   const { prisma, email, password, picture, role, ...rest } = payload;
@@ -86,7 +79,7 @@ export const createUserService = async (payload) => {
   // Hash password
   const hashedPassword = await bcrypt.hash(
     password,
-    Number(envVars.BCRYPT_SALT_ROUND || 10)
+    Number(envVars.BCRYPT_SALT_ROUND || 10),
   );
 
   // Create user
@@ -105,6 +98,3 @@ export const createUserService = async (payload) => {
 
   return user;
 };
-
-
-

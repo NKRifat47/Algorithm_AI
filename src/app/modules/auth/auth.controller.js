@@ -22,8 +22,8 @@ const credentialLogin = async (req, res, next) => {
           return next(
             new DevBuildError(
               info?.message || "Authentication failed",
-              StatusCodes.FORBIDDEN
-            )
+              StatusCodes.FORBIDDEN,
+            ),
           );
         }
 
@@ -66,7 +66,7 @@ const getNewAccessToken = async (req, res, next) => {
     if (!refreshToken) {
       throw new DevBuildError(
         "No refresh token received from cookies",
-        StatusCodes.BAD_REQUEST
+        StatusCodes.BAD_REQUEST,
       );
     }
 
@@ -86,14 +86,14 @@ const getNewAccessToken = async (req, res, next) => {
     if (!user.isVerified) {
       throw new DevBuildError(
         "User is not verified. Please verify your email.",
-        StatusCodes.FORBIDDEN
+        StatusCodes.FORBIDDEN,
       );
     }
 
     const newAccessToken = jwt.sign(
       { id: user.id, email: user.email, role: user.role },
       envVars.JWT_SECRET_TOKEN,
-      { expiresIn: envVars.JWT_EXPIRES_IN }
+      { expiresIn: envVars.JWT_EXPIRES_IN },
     );
 
     setAuthCookie(res, {
@@ -180,7 +180,11 @@ const verifyForgotPasswordOtp = async (req, res, next) => {
       });
     }
 
-    const resetToken = await OtpService.verifyForgotPasswordOtp(prisma, email, otp);
+    const resetToken = await OtpService.verifyForgotPasswordOtp(
+      prisma,
+      email,
+      otp,
+    );
 
     sendResponse(res, {
       success: true,
@@ -258,7 +262,7 @@ const changePassword = async (req, res, next) => {
     if (!oldPassword || !newPassword) {
       throw new DevBuildError(
         "Both oldPassword and newPassword are required",
-        StatusCodes.BAD_REQUEST
+        StatusCodes.BAD_REQUEST,
       );
     }
 

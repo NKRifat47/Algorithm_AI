@@ -2,7 +2,7 @@ import { OtpService } from "./otp.service.js";
 import DevBuildError from "../../lib/DevBuildError.js";
 import prisma from "../../prisma/client.js";
 
-//        SEND OTP   
+//        SEND OTP
 
 const sendOtp = async (req, res) => {
   try {
@@ -39,9 +39,7 @@ const sendOtp = async (req, res) => {
   }
 };
 
-
-//     VERIFY OTP      
-
+//     VERIFY OTP
 
 const verifyOtp = async (req, res) => {
   try {
@@ -77,7 +75,6 @@ const verifyOtp = async (req, res) => {
     });
   }
 };
-
 
 export const OtpController = {
   sendOtp,
