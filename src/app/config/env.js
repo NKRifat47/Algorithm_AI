@@ -40,6 +40,7 @@ const loadEnvVars = () => {
 
     // Redis
     REDIS_URL: process.env.REDIS_URL,
+    SEED_DATABASE: process.env.SEED_DATABASE === "true",
     // node mailer (SMTP)
     EMAIL_SENDER: {
       SMTP_HOST: process.env.SMTP_HOST,
