@@ -49,6 +49,7 @@ model User {
 
   role      Role     @default(USER)
   status    UserStatus @default(ACTIVE)
+  isVerified Boolean   @default(false)
 
   credits   Int      @default(0)
 
