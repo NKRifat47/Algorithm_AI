@@ -90,7 +90,12 @@ const adminForgotPasswordVerify = async (req, res) => {
 const adminForgotPasswordReset = async (req, res) => {
   try {
     const { token, newPassword, confirmPassword } = req.body;
-    await AdminAuthService.resetPassword(prisma, token, newPassword, confirmPassword);
+    await AdminAuthService.resetPassword(
+      prisma,
+      token,
+      newPassword,
+      confirmPassword,
+    );
 
     return res.json({
       success: true,

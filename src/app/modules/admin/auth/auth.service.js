@@ -106,6 +106,11 @@ export const AdminAuthService = {
       { expiresIn: "10m" },
     );
 
+    const tokenRedisKey = `admin-reset-token:${resetToken}`;
+    await redisClient.set(tokenRedisKey, "valid", {
+      EX: 10 * 60, // 10 minutes
+    });
+
     return resetToken;
   },
 
@@ -116,6 +121,13 @@ export const AdminAuthService = {
 
     if (newPassword !== confirmPassword) {
       throw new DevBuildError("Passwords do not match", 400);
+    }
+
+    const tokenRedisKey = `admin-reset-token:${token}`;
+    const isTokenValid = await redisClient.get(tokenRedisKey);
+
+    if (!isTokenValid) {
+      throw new DevBuildError("Reset token is invalid, expired, or has already been used", 401);
     }
 
     let payload;
@@ -140,5 +152,7 @@ export const AdminAuthService = {
         password: hashedPassword,
       },
     });
+
+    await redisClient.del(tokenRedisKey);
   },
 };
