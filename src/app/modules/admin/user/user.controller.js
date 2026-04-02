@@ -31,9 +31,9 @@ const getAllUsers = async (req, res) => {
 const deleteUser = async (req, res) => {
   try {
     const { id } = req.params;
-    
+
     if (!id) {
-       throw new DevBuildError("User ID is required", 400);
+      throw new DevBuildError("User ID is required", 400);
     }
 
     await AdminUserService.deleteUser(prisma, id);

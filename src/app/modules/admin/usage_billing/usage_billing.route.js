@@ -4,7 +4,15 @@ import { checkAuthMiddleware } from "../../../middleware/checkAuthMiddleware.js"
 
 const router = Router();
 
-router.get("/", checkAuthMiddleware("ADMIN"), AdminUsageBillingController.getUsageAndBilling);
-router.get("/plans", checkAuthMiddleware("ADMIN"), AdminUsageBillingController.getPlans);
+router.get(
+  "/",
+  checkAuthMiddleware("ADMIN"),
+  AdminUsageBillingController.getUsageAndBilling,
+);
+router.get(
+  "/plans",
+  checkAuthMiddleware("ADMIN"),
+  AdminUsageBillingController.getPlans,
+);
 
 export const AdminUsageBillingRouter = router;

@@ -14,7 +14,9 @@ const getProfile = async (req, res) => {
   } catch (error) {
     console.error("getProfile error:", error);
     if (error instanceof DevBuildError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
     }
     return res.status(500).json({
       success: false,
@@ -35,7 +37,9 @@ const updateProfile = async (req, res) => {
   } catch (error) {
     console.error("updateProfile error:", error);
     if (error instanceof DevBuildError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
     }
     return res.status(500).json({
       success: false,

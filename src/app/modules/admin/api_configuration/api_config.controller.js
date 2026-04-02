@@ -13,7 +13,9 @@ const getApiConfig = async (req, res) => {
   } catch (error) {
     console.error("getApiConfig error:", error);
     if (error instanceof DevBuildError) {
-      return res.status(error.statusCode).json({ success: false, message: error.message });
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
     }
     return res.status(500).json({
       success: false,
@@ -25,7 +27,11 @@ const getApiConfig = async (req, res) => {
 const updateApiConfig = async (req, res) => {
   try {
     const { id } = req.params;
-    const data = await AdminApiConfigService.updateApiConfig(prisma, id, req.body);
+    const data = await AdminApiConfigService.updateApiConfig(
+      prisma,
+      id,
+      req.body,
+    );
     return res.json({
       success: true,
       message: "API config updated successfully",
@@ -34,7 +40,9 @@ const updateApiConfig = async (req, res) => {
   } catch (error) {
     console.error("updateApiConfig error:", error);
     if (error instanceof DevBuildError) {
-        return res.status(error.statusCode).json({ success: false, message: error.message });
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
     }
     return res.status(500).json({
       success: false,
@@ -46,7 +54,9 @@ const updateApiConfig = async (req, res) => {
 const createApiKey = async (req, res) => {
   try {
     if (!req.body.name || !req.body.key) {
-        return res.status(400).json({ success: false, message: "Name and Key are required" });
+      return res
+        .status(400)
+        .json({ success: false, message: "Name and Key are required" });
     }
     const data = await AdminApiConfigService.createApiKey(prisma, req.body);
     return res.status(201).json({
@@ -57,7 +67,9 @@ const createApiKey = async (req, res) => {
   } catch (error) {
     console.error("createApiKey error:", error);
     if (error instanceof DevBuildError) {
-        return res.status(error.statusCode).json({ success: false, message: error.message });
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
     }
     return res.status(500).json({
       success: false,
@@ -77,7 +89,9 @@ const deleteApiKey = async (req, res) => {
   } catch (error) {
     console.error("deleteApiKey error:", error);
     if (error instanceof DevBuildError) {
-        return res.status(error.statusCode).json({ success: false, message: error.message });
+      return res
+        .status(error.statusCode)
+        .json({ success: false, message: error.message });
     }
     return res.status(500).json({
       success: false,
@@ -90,5 +104,5 @@ export const AdminApiConfigController = {
   getApiConfig,
   updateApiConfig,
   createApiKey,
-  deleteApiKey
+  deleteApiKey,
 };
