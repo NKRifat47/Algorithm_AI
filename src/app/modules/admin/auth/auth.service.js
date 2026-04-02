@@ -127,7 +127,10 @@ export const AdminAuthService = {
     const isTokenValid = await redisClient.get(tokenRedisKey);
 
     if (!isTokenValid) {
-      throw new DevBuildError("Reset token is invalid, expired, or has already been used", 401);
+      throw new DevBuildError(
+        "Reset token is invalid, expired, or has already been used",
+        401,
+      );
     }
 
     let payload;
@@ -154,5 +157,35 @@ export const AdminAuthService = {
     });
 
     await redisClient.del(tokenRedisKey);
+  },
+
+  changePassword: async (prisma, userId, currentPassword, newPassword) => {
+    const user = await prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user || user.role !== "ADMIN") {
+      throw new DevBuildError("Admin user not found", 404);
+    }
+
+    const storedPassword = user.passwordHash || user.password;
+    let isMatch = false;
+    if (isBcryptHash(storedPassword)) {
+      isMatch = await bcrypt.compare(currentPassword, storedPassword);
+    } else {
+      isMatch = storedPassword === currentPassword;
+    }
+
+    if (!isMatch) {
+      throw new DevBuildError("Current password is incorrect", 401);
+    }
+
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: hashedPassword,
+      },
+    });
   },
 };

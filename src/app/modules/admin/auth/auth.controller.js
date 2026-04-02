@@ -119,9 +119,44 @@ const adminForgotPasswordReset = async (req, res) => {
   }
 };
 
+const adminChangePassword = async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const { id: userId } = req.user;
+
+    await AdminAuthService.changePassword(
+      prisma,
+      userId,
+      currentPassword,
+      newPassword,
+    );
+
+    return res.json({
+      success: true,
+      message: "Password changed successfully",
+      data: null,
+    });
+  } catch (error) {
+    console.error("adminChangePassword error:", error);
+
+    if (error instanceof DevBuildError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to change password",
+    });
+  }
+};
+
 export const AdminAuthController = {
   adminLogin,
   adminForgotPassword,
   adminForgotPasswordVerify,
   adminForgotPasswordReset,
+  adminChangePassword,
 };
