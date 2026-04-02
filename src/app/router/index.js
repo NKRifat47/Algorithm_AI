@@ -4,6 +4,7 @@ import { AdminAuthRouter } from "../modules/admin/auth/auth.route.js";
 import { AdminUserRouter } from "../modules/admin/user/user.route.js";
 import { AdminUsageBillingRouter } from "../modules/admin/usage_billing/usage_billing.route.js";
 import { AdminApiConfigRouter } from "../modules/admin/api_configuration/api_config.route.js"
+import { AdminProfileRouter } from "../modules/admin/profile/profile.route.js"
 
 export const router = Router();
 const moduleRoutes = [
@@ -27,6 +28,11 @@ const moduleRoutes = [
     path: "/admin/api-configuration",
     route: AdminApiConfigRouter,
   },
+
+  {
+    path: "/admin/profile",
+    route: AdminProfileRouter,
+  }
 ];
 
 moduleRoutes.forEach((route) => {
