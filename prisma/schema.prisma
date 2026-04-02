@@ -7,9 +7,7 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-//////////////////////////////////////////////////
 // ENUMS
-//////////////////////////////////////////////////
 
 enum Role {
   ADMIN
@@ -34,14 +32,12 @@ enum TaskStatus {
   FAILED
 }
 
-//////////////////////////////////////////////////
 // USER
-//////////////////////////////////////////////////
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
+  id       String @id @default(uuid())
+  email    String @unique
+  password String
 
   firstName String
   lastName  String
@@ -49,14 +45,14 @@ model User {
   gender    String?
   country   String?
 
-  role      Role     @default(USER)
-  status    UserStatus @default(ACTIVE)
-  isVerified Boolean   @default(false)
+  role       Role       @default(USER)
+  status     UserStatus @default(ACTIVE)
+  isVerified Boolean    @default(false)
 
-  credits   Int      @default(0)
+  credits Int @default(0)
 
-  planId    String?
-  plan      Plan?    @relation(fields: [planId], references: [id])
+  planId String?
+  plan   Plan?   @relation(fields: [planId], references: [id])
 
   subscriptions Subscription[]
   payments      Payment[]
@@ -73,37 +69,35 @@ model User {
   updatedAt DateTime @updatedAt
 }
 
-//////////////////////////////////////////////////
 // PLAN & BILLING
-//////////////////////////////////////////////////
 
 model Plan {
-  id           String   @id @default(uuid())
-  name         String
-  price        Float
+  id    String @id @default(uuid())
+  name  String
+  price Float
 
   requestLimit Int
   agentLimit   Int
 
-  features     Json
+  features Json
 
-  users        User[]
+  users         User[]
   subscriptions Subscription[]
 
   createdAt DateTime @default(now())
 }
 
 model Subscription {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId    String
-  planId    String
+  userId String
+  planId String
 
-  user      User     @relation(fields: [userId], references: [id])
-  plan      Plan     @relation(fields: [planId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+  plan Plan @relation(fields: [planId], references: [id])
 
-  price     Float
-  status    SubscriptionStatus
+  price  Float
+  status SubscriptionStatus
 
   startDate DateTime
   endDate   DateTime
@@ -112,102 +106,96 @@ model Subscription {
 }
 
 model Payment {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  provider  String
-  amount    Float
-  status    String
+  provider String
+  amount   Float
+  status   String
 
   createdAt DateTime @default(now())
 }
 
-//////////////////////////////////////////////////
 // PROJECT
-//////////////////////////////////////////////////
 
 model Project {
-  id          String   @id @default(uuid())
-  userId      String
+  id     String @id @default(uuid())
+  userId String
 
-  user        User     @relation(fields: [userId], references: [id])
+  user User @relation(fields: [userId], references: [id])
 
   name        String
   description String?
 
-  tasks       Task[]
-  websites    Website[]
-  secrets     Secret[]
+  tasks        Task[]
+  websites     Website[]
+  secrets      Secret[]
   integrations Integration[]
-  files       File[]
+  files        File[]
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
-//////////////////////////////////////////////////
 // AI TASK SYSTEM
-//////////////////////////////////////////////////
 
 model Task {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
   userId    String
   projectId String?
 
-  user      User     @relation(fields: [userId], references: [id])
-  project   Project? @relation(fields: [projectId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
 
-  title     String
-  prompt    String
+  title  String
+  prompt String
 
-  status    TaskStatus @default(PENDING)
+  status TaskStatus @default(PENDING)
 
-  messages  Message[]
-  steps     TaskStep[]
+  messages Message[]
+  steps    TaskStep[]
 
   createdAt DateTime @default(now())
 }
 
 model Message {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  taskId    String
-  task      Task     @relation(fields: [taskId], references: [id])
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id])
 
-  role      String
-  content   String
+  role    String
+  content String
 
   createdAt DateTime @default(now())
 }
 
 model TaskStep {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  taskId    String
-  task      Task     @relation(fields: [taskId], references: [id])
+  taskId String
+  task   Task   @relation(fields: [taskId], references: [id])
 
-  stepName  String
-  status    String
-  output    String?
+  stepName String
+  status   String
+  output   String?
 
   createdAt DateTime @default(now())
 }
 
-//////////////////////////////////////////////////
 // WEBSITE BUILDER
-//////////////////////////////////////////////////
 
 model Website {
-  id          String   @id @default(uuid())
-  projectId   String
+  id        String @id @default(uuid())
+  projectId String
 
-  project     Project  @relation(fields: [projectId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
 
   name        String
-  subdomain   String   @unique
-  isPublished Boolean  @default(false)
+  subdomain   String  @unique
+  isPublished Boolean @default(false)
 
   files       WebsiteFile[]
   deployments Deployment[]
@@ -215,57 +203,55 @@ model Website {
 
   analyticsEvents AnalyticsEvent[]
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model WebsiteFile {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
   websiteId String
-  website   Website  @relation(fields: [websiteId], references: [id])
+  website   Website @relation(fields: [websiteId], references: [id])
 
-  fileName  String
-  fileType  String
-  content   String
+  fileName String
+  fileType String
+  content  String
 
   createdAt DateTime @default(now())
 }
 
 model Deployment {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
   websiteId String
-  website   Website  @relation(fields: [websiteId], references: [id])
+  website   Website @relation(fields: [websiteId], references: [id])
 
-  url       String
-  status    String
+  url    String
+  status String
 
   createdAt DateTime @default(now())
 }
 
-//////////////////////////////////////////////////
 // ANALYTICS
-//////////////////////////////////////////////////
 
 model Analytics {
-  id          String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  websiteId   String
-  website     Website  @relation(fields: [websiteId], references: [id])
+  websiteId String
+  website   Website @relation(fields: [websiteId], references: [id])
 
-  pageViews   Int
-  visits      Int
-  visitors    Int
-  bounceRate  Float
+  pageViews  Int
+  visits     Int
+  visitors   Int
+  bounceRate Float
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model AnalyticsEvent {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
   websiteId String
-  website   Website  @relation(fields: [websiteId], references: [id])
+  website   Website @relation(fields: [websiteId], references: [id])
 
   eventType String
   metadata  Json
@@ -273,161 +259,151 @@ model AnalyticsEvent {
   createdAt DateTime @default(now())
 }
 
-//////////////////////////////////////////////////
 // INTEGRATIONS & SECRETS
-//////////////////////////////////////////////////
 
 model Secret {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
   projectId String
-  project   Project  @relation(fields: [projectId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id])
 
-  key       String
-  value     String
+  key   String
+  value String
 
   createdAt DateTime @default(now())
 }
 
 model Integration {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
   projectId String
-  project   Project  @relation(fields: [projectId], references: [id])
+  project   Project @relation(fields: [projectId], references: [id])
 
-  type      String
-  config    Json
+  type   String
+  config Json
 
   createdAt DateTime @default(now())
 }
 
-//////////////////////////////////////////////////
 // FILE STORAGE
-//////////////////////////////////////////////////
 
 model File {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
   userId    String
   projectId String?
 
-  user      User     @relation(fields: [userId], references: [id])
-  project   Project? @relation(fields: [projectId], references: [id])
+  user    User     @relation(fields: [userId], references: [id])
+  project Project? @relation(fields: [projectId], references: [id])
 
-  fileUrl   String
-  fileType  String
+  fileUrl  String
+  fileType String
 
   createdAt DateTime @default(now())
 }
 
-//////////////////////////////////////////////////
 // TEMPLATE / LIBRARY
-//////////////////////////////////////////////////
 
 model Template {
-  id           String   @id @default(uuid())
+  id           String @id @default(uuid())
   title        String
   description  String
   previewImage String
   category     String
 
-  favorites    UserFavorite[]
+  favorites UserFavorite[]
 }
 
 model UserFavorite {
-  id         String   @id @default(uuid())
+  id String @id @default(uuid())
 
   userId     String
   templateId String
 
-  user       User     @relation(fields: [userId], references: [id])
-  template   Template @relation(fields: [templateId], references: [id])
+  user     User     @relation(fields: [userId], references: [id])
+  template Template @relation(fields: [templateId], references: [id])
 }
 
-//////////////////////////////////////////////////
 // NOTIFICATIONS
-//////////////////////////////////////////////////
 
 model Notification {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId    String
-  user      User     @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
-  type      String
-  message   String
+  type    String
+  message String
 
-  isRead    Boolean  @default(false)
+  isRead Boolean @default(false)
 
   createdAt DateTime @default(now())
 }
 
 model NotificationSetting {
-  id            String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId        String   @unique
-  user          User     @relation(fields: [userId], references: [id])
+  userId String @unique
+  user   User   @relation(fields: [userId], references: [id])
 
-  emailEnabled  Boolean  @default(true)
-  inAppEnabled  Boolean  @default(true)
+  emailEnabled Boolean @default(true)
+  inAppEnabled Boolean @default(true)
 }
 
-//////////////////////////////////////////////////
 // ADMIN SYSTEM
-//////////////////////////////////////////////////
 
 model ApiUsage {
-  id           String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  userId       String
-  user         User     @relation(fields: [userId], references: [id])
+  userId String
+  user   User   @relation(fields: [userId], references: [id])
 
   tokensUsed   Int
   requestCount Int
 
-  date         DateTime
+  date DateTime
 }
 
 model ActivityLog {
-  id         String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  type       String
-  message    String
+  type    String
+  message String
 
-  userEmail  String
-  meta       Json
+  userEmail String
+  meta      Json
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model SystemMetric {
-  id          String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  totalUsers  Int
-  apiUsage    Int
-  revenue     Float
+  totalUsers Int
+  apiUsage   Int
+  revenue    Float
 
-  recordedAt  DateTime
+  recordedAt DateTime
 }
 
 model ApiConfig {
-  id            String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  openaiKey     String
-  anthropicKey  String
-  baseUrl       String
+  openaiKey    String
+  anthropicKey String
+  baseUrl      String
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model ApiKey {
-  id        String   @id @default(uuid())
+  id String @id @default(uuid())
 
-  key       String
-  name      String
+  key  String
+  name String
 
-  isActive  Boolean  @default(true)
+  isActive Boolean @default(true)
 
   createdAt DateTime @default(now())
 }
