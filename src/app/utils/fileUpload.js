@@ -1,53 +1,22 @@
-import multer from "multer";
-import path from "path";
-import fs from "fs";
+import { createMulterUpload } from "../config/multer.config.js";
 
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    let uploadPath = "uploads/essays/";
-
-    // Create directory if it doesn't exist
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-
-    cb(null, uploadPath);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + "-" + Math.round(Math.random() * 1e9);
-    cb(
-      null,
-      file.fieldname + "-" + uniqueSuffix + path.extname(file.originalname),
-    );
-  },
+/**
+ * Avatar Upload Middleware (Images only)
+ */
+export const uploadAvatar = createMulterUpload({
+  folder: "avatars",
+  allowedTypes: /jpeg|jpg|png|webp/,
+  maxSize: 2 * 1024 * 1024, // 2MB for avatars
 });
 
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = [
-    "audio/mpeg",
-    "audio/wav",
-    "audio/ogg",
-    "audio/mp3",
-    "application/pdf",
-    "image/jpeg",
-    "image/png",
-    "image/webp",
-  ];
-
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(
-      new Error("Invalid file type. Only audio, PDF, and images are allowed."),
-      false,
-    );
-  }
-};
-
-export const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB limit
-  },
+/**
+ * ESSAY Upload Middleware (Standard usage of previous fileUpload.js)
+ */
+export const uploadEssay = createMulterUpload({
+  folder: "essays",
+  allowedTypes: /jpeg|jpg|png|webp|audio|mpeg|wav|ogg|mp3|pdf|doc|docx/,
+  maxSize: 10 * 1024 * 1024, // 10MB
 });
+
+// Default export for backward compatibility if needed
+export const upload = uploadEssay;
