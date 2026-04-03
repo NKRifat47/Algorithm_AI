@@ -20,7 +20,8 @@ export const OtpService = {
       select: {
         id: true,
         isVerified: true,
-        name: true,
+        firstName: true,
+        lastName: true,
       },
     });
 
@@ -44,7 +45,7 @@ export const OtpService = {
       subject: "Verification OTP",
       templateName: "otp",
       templateData: {
-        name: name || user.name,
+        name: name || `${user.firstName || ""} ${user.lastName || ""}`.trim(),
         otp,
       },
     });
@@ -112,7 +113,7 @@ export const OtpService = {
       subject: "Forgot Password OTP",
       templateName: "forgotPassword",
       templateData: {
-        name: user.name,
+        name: `${user.firstName || ""} ${user.lastName || ""}`.trim(),
         otp,
       },
     });
@@ -143,12 +144,14 @@ export const OtpService = {
       { expiresIn: "10m" },
     );
 
-    await prisma.user.update({
-      where: { email },
-      data: { forgotPasswordStatus: true },
+    // Save reset token in Redis
+    const tokenRedisKey = `user-reset-token:${resetToken}`;
+    await redisClient.set(tokenRedisKey, "valid", {
+      EX: 10 * 60, // 10 minutes
     });
 
     await redisClient.del(redisKey);
+
     return resetToken;
   },
 };
