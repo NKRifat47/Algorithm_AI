@@ -7,11 +7,7 @@ import { uploadAvatar } from "../../../utils/fileUpload.js";
 
 const router = Router();
 
-router.get(
-  "/",
-  checkAuthMiddleware("USER", "ADMIN"),
-  UserProfileController.getProfile,
-);
+router.get("/", checkAuthMiddleware("USER"), UserProfileController.getProfile);
 
 router.patch(
   "/",
