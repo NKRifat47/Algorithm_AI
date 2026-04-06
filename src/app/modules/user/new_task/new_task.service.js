@@ -30,7 +30,8 @@ const handleNewTask = async (userId, payload) => {
     const updatedTask = await prisma.task.update({
       where: { id: task.id },
       data: {
-        content: typeof aiContent === "string" ? aiContent : JSON.stringify(aiContent),
+        content:
+          typeof aiContent === "string" ? aiContent : JSON.stringify(aiContent),
         status: "COMPLETED",
       },
     });
@@ -104,7 +105,45 @@ const getNewTaskData = async (userId) => {
   };
 };
 
+const getTaskById = async (userId, taskId) => {
+  const task = await prisma.task.findUnique({
+    where: {
+      id: taskId,
+      userId, // Ensure the task belongs to the user
+    },
+  });
+
+  if (!task) {
+    throw new Error("Task not found");
+  }
+
+  return task;
+};
+
+const getProjectById = async (userId, projectId) => {
+  const project = await prisma.project.findUnique({
+    where: {
+      id: projectId,
+      userId,
+    },
+    include: {
+      tasks: {
+        orderBy: { createdAt: "desc" },
+        take: 10,
+      },
+    },
+  });
+
+  if (!project) {
+    throw new Error("Project not found");
+  }
+
+  return project;
+};
+
 export const NewTaskService = {
   handleNewTask,
   getNewTaskData,
+  getTaskById,
+  getProjectById,
 };
