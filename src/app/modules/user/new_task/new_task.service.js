@@ -53,6 +53,58 @@ const handleNewTask = async (userId, payload) => {
   }
 };
 
+const getNewTaskData = async (userId) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      email: true,
+      firstName: true,
+      lastName: true,
+      avatar: true,
+      credits: true,
+    },
+  });
+
+  if (!user) {
+    throw new Error("User not found");
+  }
+
+  const projects = await prisma.project.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      name: true,
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  const tasks = await prisma.task.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      title: true,
+      status: true,
+      prompt: true,
+      content: true,
+      createdAt: true,
+    },
+    orderBy: { createdAt: "desc" },
+    take: 10,
+  });
+
+  return {
+    profile: {
+      name: `${user.firstName} ${user.lastName}`.trim(),
+      email: user.email,
+      avatar: user.avatar,
+      credits: user.credits,
+    },
+    projects,
+    tasks,
+  };
+};
+
 export const NewTaskService = {
   handleNewTask,
+  getNewTaskData,
 };

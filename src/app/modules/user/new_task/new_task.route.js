@@ -6,8 +6,8 @@ import { checkAuthMiddleware } from "../../../middleware/checkAuthMiddleware.js"
 
 const router = Router();
 
-// POST /api/user/new-task/create
-// User sends a prompt → AI responds → saved to DB
+router.get("/", checkAuthMiddleware("USER"), NewTaskController.getNewTaskData);
+
 router.post(
   "/create",
   checkAuthMiddleware("USER"),

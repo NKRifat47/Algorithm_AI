@@ -41,6 +41,34 @@ const createNewTask = async (req, res) => {
   }
 };
 
+const getNewTaskData = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const result = await NewTaskService.getNewTaskData(userId);
+
+    return res.status(httpStatus.OK).json({
+      success: true,
+      message: "Dashboard data fetched successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("getNewTaskData error:", error);
+
+    if (error instanceof DevBuildError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || "Failed to fetch dashboard data",
+    });
+  }
+};
+
 export const NewTaskController = {
   createNewTask,
+  getNewTaskData,
 };
