@@ -126,9 +126,47 @@ const getProjectById = async (req, res) => {
   }
 };
 
+const continueTask = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const { id } = req.params;
+    const { prompt } = req.body;
+
+    if (!prompt) {
+      return res.status(httpStatus.BAD_REQUEST).json({
+        success: false,
+        message: "Prompt is required",
+      });
+    }
+
+    const result = await NewTaskService.continueTask(userId, id, prompt);
+
+    return res.status(httpStatus.OK).json({
+      success: true,
+      message: "AI response received and conversation updated",
+      data: result,
+    });
+  } catch (error) {
+    console.error("continueTask error:", error);
+
+    if (error instanceof DevBuildError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || "Failed to continue conversation",
+    });
+  }
+};
+
 export const NewTaskController = {
   createNewTask,
   getNewTaskData,
   getTaskById,
   getProjectById,
+  continueTask,
 };

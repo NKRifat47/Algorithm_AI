@@ -16,6 +16,15 @@ const handleNewTask = async (userId, payload) => {
     },
   });
 
+  // 2. Create the initial user message (chat history)
+  await prisma.message.create({
+    data: {
+      taskId: task.id,
+      role: "user",
+      content: prompt,
+    },
+  });
+
   try {
     // 2. Call teammate's AI Engine
     const aiEngineUrl = envVars.AI_ENGINE_URL || "http://localhost:8000";
@@ -33,6 +42,16 @@ const handleNewTask = async (userId, payload) => {
         content:
           typeof aiContent === "string" ? aiContent : JSON.stringify(aiContent),
         status: "COMPLETED",
+      },
+    });
+
+    // 4. Create the final AI message (chat history)
+    await prisma.message.create({
+      data: {
+        taskId: task.id,
+        role: "assistant",
+        content:
+          typeof aiContent === "string" ? aiContent : JSON.stringify(aiContent),
       },
     });
 
@@ -109,7 +128,12 @@ const getTaskById = async (userId, taskId) => {
   const task = await prisma.task.findUnique({
     where: {
       id: taskId,
-      userId, // Ensure the task belongs to the user
+      userId,
+    },
+    include: {
+      messages: {
+        orderBy: { createdAt: "asc" },
+      },
     },
   });
 
@@ -118,6 +142,97 @@ const getTaskById = async (userId, taskId) => {
   }
 
   return task;
+};
+
+const continueTask = async (userId, taskId, newPrompt) => {
+  // 1. Validating the task exists and belongs to the user
+  const existingTask = await prisma.task.findUnique({
+    where: { id: taskId, userId },
+    include: {
+      messages: {
+        orderBy: { createdAt: "desc" },
+        take: 3,
+      },
+    },
+  });
+
+  if (!existingTask) {
+    throw new Error("Task not found or unauthorized");
+  }
+
+  // 2. Formatting the context for the AI Engine
+  // Note: Existing messages are fetched in desc order, so we reverse it
+  const contextHistory = existingTask.messages
+    .reverse()
+    .map(
+      (msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`,
+    )
+    .join("\n");
+
+  const combinedPrompt = `${contextHistory}\nUser: ${newPrompt}`;
+
+  // 3. Updating task status to RUNNING
+  await prisma.task.update({
+    where: { id: taskId },
+    data: { status: "RUNNING" },
+  });
+
+  // 4. Save the new user prompt as a Message
+  await prisma.message.create({
+    data: {
+      taskId,
+      role: "user",
+      content: newPrompt,
+    },
+  });
+
+  try {
+    const aiEngineUrl = envVars.AI_ENGINE_URL || "http://localhost:8000";
+
+    const response = await axios.post(`${aiEngineUrl}/api/generate`, {
+      prompt: combinedPrompt,
+    });
+
+    const aiContent = response.data;
+
+    // 5. Update Task with latest AI response and status
+    const updatedTask = await prisma.task.update({
+      where: { id: taskId },
+      data: {
+        content:
+          typeof aiContent === "string" ? aiContent : JSON.stringify(aiContent),
+        status: "COMPLETED",
+      },
+    });
+
+    // 6. Save AI's response message
+    await prisma.message.create({
+      data: {
+        taskId,
+        role: "assistant",
+        content:
+          typeof aiContent === "string" ? aiContent : JSON.stringify(aiContent),
+      },
+    });
+
+    return updatedTask;
+  } catch (error) {
+    console.error(
+      "AI Engine Error (Continue):",
+      error.response?.data || error.message,
+    );
+
+    await prisma.task.update({
+      where: { id: taskId },
+      data: { status: "FAILED" },
+    });
+
+    throw new Error(
+      error.response?.data?.detail ||
+        error.message ||
+        "Failed to get response from AI Engine",
+    );
+  }
 };
 
 const getProjectById = async (userId, projectId) => {
@@ -146,4 +261,5 @@ export const NewTaskService = {
   getNewTaskData,
   getTaskById,
   getProjectById,
+  continueTask,
 };
