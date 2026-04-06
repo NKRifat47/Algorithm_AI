@@ -235,31 +235,9 @@ const continueTask = async (userId, taskId, newPrompt) => {
   }
 };
 
-const getProjectById = async (userId, projectId) => {
-  const project = await prisma.project.findUnique({
-    where: {
-      id: projectId,
-      userId,
-    },
-    include: {
-      tasks: {
-        orderBy: { createdAt: "desc" },
-        take: 10,
-      },
-    },
-  });
-
-  if (!project) {
-    throw new Error("Project not found");
-  }
-
-  return project;
-};
-
 export const NewTaskService = {
   handleNewTask,
   getNewTaskData,
   getTaskById,
-  getProjectById,
   continueTask,
 };

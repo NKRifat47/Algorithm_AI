@@ -8,6 +8,7 @@ import { AdminProfileRouter } from "../modules/admin/profile/profile.route.js";
 import { UserAuthRouter } from "../modules/user/auth/auth.route.js";
 import { UserProfileRouter } from "../modules/user/profile/profile.route.js";
 import { NewTaskRouter } from "../modules/user/new_task/new_task.route.js";
+import { ProjectRouter } from "../modules/user/project/project.route.js";
 
 export const router = Router();
 const moduleRoutes = [
@@ -51,6 +52,10 @@ const moduleRoutes = [
   {
     path: "/user/new-task",
     route: NewTaskRouter,
+  },
+  {
+    path: "/user/project",
+    route: ProjectRouter,
   },
 ];
 

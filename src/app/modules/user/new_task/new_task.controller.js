@@ -97,35 +97,6 @@ const getTaskById = async (req, res) => {
   }
 };
 
-const getProjectById = async (req, res) => {
-  try {
-    const userId = req.user.id;
-    const { id } = req.params;
-
-    const result = await NewTaskService.getProjectById(userId, id);
-
-    return res.status(httpStatus.OK).json({
-      success: true,
-      message: "Project fetched successfully",
-      data: result,
-    });
-  } catch (error) {
-    console.error("getProjectById error:", error);
-
-    if (error instanceof DevBuildError) {
-      return res.status(error.statusCode).json({
-        success: false,
-        message: error.message,
-      });
-    }
-
-    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
-      success: false,
-      message: error.message || "Failed to fetch project",
-    });
-  }
-};
-
 const continueTask = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -167,6 +138,5 @@ export const NewTaskController = {
   createNewTask,
   getNewTaskData,
   getTaskById,
-  getProjectById,
   continueTask,
 };

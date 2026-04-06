@@ -10,12 +10,6 @@ router.get("/", checkAuthMiddleware("USER"), NewTaskController.getNewTaskData);
 
 router.get("/:id", checkAuthMiddleware("USER"), NewTaskController.getTaskById);
 
-router.get(
-  "/project/:id",
-  checkAuthMiddleware("USER"),
-  NewTaskController.getProjectById,
-);
-
 router.post(
   "/:id/continue",
   checkAuthMiddleware("USER"),
