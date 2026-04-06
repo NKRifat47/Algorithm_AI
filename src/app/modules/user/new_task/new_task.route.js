@@ -17,6 +17,12 @@ router.get(
 );
 
 router.post(
+  "/:id/continue",
+  checkAuthMiddleware("USER"),
+  NewTaskController.continueTask,
+);
+
+router.post(
   "/create",
   checkAuthMiddleware("USER"),
   validateRequest(NewTaskValidation.createTaskSchema),
