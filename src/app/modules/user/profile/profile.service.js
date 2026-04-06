@@ -28,7 +28,7 @@ export const UserProfileService = {
       email: user.email,
       avatarUrl: user.avatar,
       credits: user.credits,
-      plan: user.plan?.name || "Free",
+      plan: user.plan?.name || "N/A",
     };
   },
 
