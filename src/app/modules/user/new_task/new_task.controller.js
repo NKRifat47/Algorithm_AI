@@ -2,6 +2,20 @@ import { NewTaskService } from "./new_task.service.js";
 import httpStatus from "http-status";
 import DevBuildError from "../../../lib/DevBuildError.js";
 
+const parseIfJsonString = (value) => {
+  if (typeof value !== "string") return value;
+  const trimmed = value.trim();
+  if (!trimmed) return value;
+  const first = trimmed[0];
+  if (first !== "{" && first !== "[") return value;
+
+  try {
+    return JSON.parse(trimmed);
+  } catch {
+    return value;
+  }
+};
+
 const createNewTask = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -20,7 +34,8 @@ const createNewTask = async (req, res) => {
         taskId: result.id,
         status: result.status,
         prompt: result.prompt,
-        aiResponse: result.content,
+        aiResponse: parseIfJsonString(result.content),
+        aiResponseRaw: typeof result.content === "string" ? result.content : null,
         createdAt: result.createdAt,
       },
     });
@@ -115,7 +130,11 @@ const continueTask = async (req, res) => {
     return res.status(httpStatus.OK).json({
       success: true,
       message: "AI response received and conversation updated",
-      data: result,
+      data: {
+        ...result,
+        content: parseIfJsonString(result.content),
+        contentRaw: typeof result.content === "string" ? result.content : null,
+      },
     });
   } catch (error) {
     console.error("continueTask error:", error);
