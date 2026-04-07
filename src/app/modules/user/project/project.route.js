@@ -19,4 +19,11 @@ router.get(
   ProjectController.getProjectById,
 );
 
+router.post(
+  "/:id/tasks/create",
+  checkAuthMiddleware("USER"),
+  validateRequest(ProjectValidation.createTaskSchema),
+  ProjectController.createTask,
+);
+
 export const ProjectRouter = router;
