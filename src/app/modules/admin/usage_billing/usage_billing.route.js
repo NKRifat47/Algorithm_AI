@@ -9,6 +9,7 @@ router.get(
   checkAuthMiddleware("ADMIN"),
   AdminUsageBillingController.getUsageAndBilling,
 );
+
 router.get(
   "/plans",
   checkAuthMiddleware("ADMIN"),
