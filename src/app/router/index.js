@@ -9,6 +9,7 @@ import { UserAuthRouter } from "../modules/user/auth/auth.route.js";
 import { UserProfileRouter } from "../modules/user/profile/profile.route.js";
 import { NewTaskRouter } from "../modules/user/new_task/new_task.route.js";
 import { ProjectRouter } from "../modules/user/project/project.route.js";
+import { LibraryRouter } from "../modules/user/library/library.route.js";
 
 export const router = Router();
 const moduleRoutes = [
@@ -56,6 +57,10 @@ const moduleRoutes = [
   {
     path: "/user/project",
     route: ProjectRouter,
+  },
+  {
+    path: "/user/library",
+    route: LibraryRouter,
   },
 ];
 
