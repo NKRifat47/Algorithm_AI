@@ -4,6 +4,112 @@ import { envVars } from "../../../config/env.js";
 import fs from "fs";
 import path from "path";
 import PDFDocument from "pdfkit";
+import archiver from "archiver";
+
+const getAiOutputText = (rawContent) => {
+  if (typeof rawContent !== "string") return "";
+  const trimmed = rawContent.trim();
+  if (!trimmed) return "";
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    const output =
+      parsed?.data?.result?.formatted_results?.[0]?.output ??
+      parsed?.data?.result?.output ??
+      parsed?.output;
+    return typeof output === "string" ? output : trimmed;
+  } catch {
+    return rawContent;
+  }
+};
+
+const extractCodeFilesFromText = (text) => {
+  // Heuristics: look for patterns like:
+  // - "```path/to/file.ext\n...\n```"
+  // - "### path/to/file.ext\n```lang\n...\n```"
+  // - "File: path/to/file.ext\n```...\n```"
+  if (!text || typeof text !== "string") return [];
+
+  const files = [];
+  const pushFile = (filePath, content) => {
+    if (!filePath || !content) return;
+    const normalized = filePath
+      .replaceAll("\\", "/")
+      .replace(/^["'`]/, "")
+      .replace(/["'`]$/, "")
+      .trim();
+
+    // reject paths that could escape the zip folder
+    if (
+      !normalized ||
+      normalized.startsWith("/") ||
+      normalized.includes("..") ||
+      normalized.length > 200
+    ) {
+      return;
+    }
+
+    // keep it somewhat realistic (avoid things like "javascript")
+    if (!/[a-zA-Z0-9_-]+\.[a-zA-Z0-9]+$/.test(normalized)) return;
+
+    files.push({ path: normalized, content });
+  };
+
+  // Pattern 1: fenced blocks where the info string is a file path
+  // ```src/index.html
+  // <html>...</html>
+  // ```
+  const fencePathRegex = /```([^\n`]{1,200})\n([\s\S]*?)```/g;
+  for (const match of text.matchAll(fencePathRegex)) {
+    const header = (match[1] || "").trim();
+    const content = (match[2] || "").replace(/\n$/, "");
+
+    // If header looks like a language tag (js, html, etc.) ignore.
+    if (/^[a-zA-Z]{1,12}$/.test(header)) continue;
+    pushFile(header, content);
+  }
+
+  // Pattern 2: "File: path" followed by a normal fenced block
+  const fileThenFenceRegex =
+    /(?:^|\n)\s*(?:File|Filename|Path)\s*:\s*([^\n]{1,200})\s*\n```[^\n]*\n([\s\S]*?)```/g;
+  for (const match of text.matchAll(fileThenFenceRegex)) {
+    pushFile((match[1] || "").trim(), (match[2] || "").replace(/\n$/, ""));
+  }
+
+  // Pattern 3: "### path" followed by fenced block
+  const headingThenFenceRegex =
+    /(?:^|\n)#+\s*([^\n]{1,200})\s*\n```[^\n]*\n([\s\S]*?)```/g;
+  for (const match of text.matchAll(headingThenFenceRegex)) {
+    pushFile((match[1] || "").trim(), (match[2] || "").replace(/\n$/, ""));
+  }
+
+  // Pattern 4: path on its own line, then fenced block with a language tag
+  // src/index.js
+  // ```javascript
+  // ...
+  // ```
+  const pathLineThenFenceRegex =
+    /(?:^|\n)\s*([^\n`]{1,200}\.[a-zA-Z0-9]{1,12})\s*\n```[^\n]*\n([\s\S]*?)```/g;
+  for (const match of text.matchAll(pathLineThenFenceRegex)) {
+    pushFile((match[1] || "").trim(), (match[2] || "").replace(/\n$/, ""));
+  }
+
+  // Deduplicate by path, prefer first occurrence
+  const seen = new Set();
+  return files.filter((f) => {
+    if (seen.has(f.path)) return false;
+    seen.add(f.path);
+    return true;
+  });
+};
+
+export const detectResponseType = (rawContent) => {
+  const text = getAiOutputText(rawContent);
+  const files = extractCodeFilesFromText(text);
+  // Treat as codebase only if it looks like a multi-file output.
+  if (files.length >= 2) return { type: "codebase", filesCount: files.length };
+  return { type: "text", filesCount: files.length };
+};
 
 const handleNewTask = async (userId, payload) => {
   const { prompt, projectId, title } = payload;
@@ -243,6 +349,7 @@ export const NewTaskService = {
   getNewTaskData,
   getTaskById,
   continueTask,
+  detectResponseType,
   generateTaskPdf: async (userId, taskId) => {
     const task = await prisma.task.findUnique({
       where: { id: taskId, userId },
@@ -376,6 +483,110 @@ export const NewTaskService = {
     return {
       absolutePdfPath,
       relativePdfPath: step.output,
+    };
+  },
+  generateTaskCodebaseZip: async (userId, taskId) => {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId, userId },
+    });
+
+    if (!task) {
+      throw new Error("Task not found or unauthorized");
+    }
+    if (!task.content) {
+      throw new Error("Task has no AI content to export");
+    }
+
+    const outputText = getAiOutputText(task.content);
+    const files = extractCodeFilesFromText(outputText);
+    if (files.length < 2) {
+      throw new Error(
+        "This task doesn't look like a multi-file codebase. ZIP export is available only for codebase responses.",
+      );
+    }
+
+    // If we already generated a ZIP for this task, reuse it.
+    const existingStep = await prisma.taskStep.findFirst({
+      where: { taskId, stepName: "CODEBASE_ZIP" },
+      orderBy: { createdAt: "desc" },
+    });
+    if (existingStep?.status === "COMPLETED" && existingStep.output) {
+      const existingAbs = path.resolve(process.cwd(), existingStep.output);
+      if (fs.existsSync(existingAbs)) {
+        return { zipPath: existingStep.output, alreadyExisted: true };
+      }
+    }
+
+    const uploadsDir = path.join(process.cwd(), "uploads", "task-zips");
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const fileName = `task-${taskId}-${Date.now()}.zip`;
+    const relativeZipPath = path.join("uploads", "task-zips", fileName);
+    const absoluteZipPath = path.join(uploadsDir, fileName);
+
+    await new Promise((resolve, reject) => {
+      const output = fs.createWriteStream(absoluteZipPath);
+      const archive = archiver("zip", { zlib: { level: 9 } });
+
+      output.on("close", resolve);
+      output.on("error", reject);
+      archive.on("warning", (err) => {
+        if (err.code === "ENOENT") return;
+        reject(err);
+      });
+      archive.on("error", reject);
+
+      archive.pipe(output);
+
+      // Put everything inside a single folder in the zip
+      const rootFolder = `task-${taskId}`;
+      for (const f of files) {
+        archive.append(f.content, { name: `${rootFolder}/${f.path}` });
+      }
+
+      archive.finalize();
+    });
+
+    await prisma.taskStep.create({
+      data: {
+        taskId,
+        stepName: "CODEBASE_ZIP",
+        status: "COMPLETED",
+        output: relativeZipPath,
+      },
+    });
+
+    return { zipPath: relativeZipPath, alreadyExisted: false, filesCount: files.length };
+  },
+  getTaskCodebaseZipPath: async (userId, taskId) => {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId, userId },
+      select: { id: true },
+    });
+
+    if (!task) {
+      throw new Error("Task not found or unauthorized");
+    }
+
+    const step = await prisma.taskStep.findFirst({
+      where: { taskId, stepName: "CODEBASE_ZIP", status: "COMPLETED" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!step?.output) {
+      throw new Error("ZIP not generated yet");
+    }
+
+    const absoluteZipPath = path.resolve(process.cwd(), step.output);
+    if (!fs.existsSync(absoluteZipPath)) {
+      throw new Error("ZIP file missing on server");
+    }
+
+    return {
+      absoluteZipPath,
+      relativeZipPath: step.output,
     };
   },
 };

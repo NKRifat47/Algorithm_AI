@@ -30,6 +30,20 @@ router.get(
   NewTaskController.downloadTaskPdf,
 );
 
+// Generate ZIP (codebase) only when user requests it
+router.post(
+  "/:id/codebase",
+  checkAuthMiddleware("USER"),
+  NewTaskController.generateTaskCodebaseZip,
+);
+
+// Download the generated ZIP
+router.get(
+  "/:id/codebase/download",
+  checkAuthMiddleware("USER"),
+  NewTaskController.downloadTaskCodebaseZip,
+);
+
 router.post(
   "/create",
   checkAuthMiddleware("USER"),
