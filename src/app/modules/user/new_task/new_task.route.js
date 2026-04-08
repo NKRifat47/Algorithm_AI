@@ -16,6 +16,20 @@ router.post(
   NewTaskController.continueTask,
 );
 
+// Generate PDF only when user requests it
+router.post(
+  "/:id/pdf",
+  checkAuthMiddleware("USER"),
+  NewTaskController.generateTaskPdf,
+);
+
+// Download the generated PDF
+router.get(
+  "/:id/pdf/download",
+  checkAuthMiddleware("USER"),
+  NewTaskController.downloadTaskPdf,
+);
+
 router.post(
   "/create",
   checkAuthMiddleware("USER"),

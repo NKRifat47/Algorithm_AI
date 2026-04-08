@@ -1,6 +1,9 @@
 import axios from "axios";
 import prisma from "../../../prisma/client.js";
 import { envVars } from "../../../config/env.js";
+import fs from "fs";
+import path from "path";
+import PDFDocument from "pdfkit";
 
 const handleNewTask = async (userId, payload) => {
   const { prompt, projectId, title } = payload;
@@ -240,4 +243,139 @@ export const NewTaskService = {
   getNewTaskData,
   getTaskById,
   continueTask,
+  generateTaskPdf: async (userId, taskId) => {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId, userId },
+    });
+
+    if (!task) {
+      throw new Error("Task not found or unauthorized");
+    }
+
+    if (!task.content) {
+      throw new Error("Task has no AI content to export");
+    }
+
+    // If we already generated a PDF for this task, reuse it.
+    const existingStep = await prisma.taskStep.findFirst({
+      where: { taskId, stepName: "PDF_EXPORT" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (existingStep?.status === "COMPLETED" && existingStep.output) {
+      const existingAbs = path.resolve(process.cwd(), existingStep.output);
+      if (fs.existsSync(existingAbs)) {
+        return {
+          pdfPath: existingStep.output,
+          alreadyExisted: true,
+        };
+      }
+    }
+
+    const uploadsDir = path.join(process.cwd(), "uploads", "task-pdfs");
+    if (!fs.existsSync(uploadsDir)) {
+      fs.mkdirSync(uploadsDir, { recursive: true });
+    }
+
+    const fileName = `task-${taskId}-${Date.now()}.pdf`;
+    const relativePdfPath = path.join("uploads", "task-pdfs", fileName);
+    const absolutePdfPath = path.join(uploadsDir, fileName);
+
+    const extractText = (raw) => {
+      if (typeof raw !== "string") return JSON.stringify(raw, null, 2);
+
+      const trimmed = raw.trim();
+      if (!trimmed) return "";
+
+      try {
+        const parsed = JSON.parse(trimmed);
+        const output =
+          parsed?.data?.result?.formatted_results?.[0]?.output ??
+          parsed?.data?.result?.output ??
+          parsed?.output;
+        if (typeof output === "string" && output.trim()) return output;
+        return JSON.stringify(parsed, null, 2);
+      } catch {
+        return raw;
+      }
+    };
+
+    const pdfText = extractText(task.content);
+
+    // Write PDF to disk
+    await new Promise((resolve, reject) => {
+      const doc = new PDFDocument({
+        size: "A4",
+        margins: { top: 50, bottom: 50, left: 50, right: 50 },
+      });
+
+      const stream = fs.createWriteStream(absolutePdfPath);
+      stream.on("finish", resolve);
+      stream.on("error", reject);
+
+      doc.pipe(stream);
+
+      doc.fontSize(18).text(task.title || "AI Report", { align: "left" });
+      doc.moveDown(0.5);
+      doc.fontSize(10).fillColor("#666").text(`Task ID: ${task.id}`);
+      doc.moveDown(0.25);
+      doc.text(`Created: ${task.createdAt?.toISOString?.() ?? ""}`);
+      doc.moveDown();
+
+      doc.fillColor("#000").fontSize(12).text("Prompt", { underline: true });
+      doc.moveDown(0.25);
+      doc.fontSize(11).text(task.prompt || "");
+      doc.moveDown();
+
+      doc.fontSize(12).text("Answer", { underline: true });
+      doc.moveDown(0.25);
+      doc.fontSize(11).text(pdfText || "");
+
+      doc.end();
+    });
+
+    // Save metadata linked to task without schema changes
+    await prisma.taskStep.create({
+      data: {
+        taskId,
+        stepName: "PDF_EXPORT",
+        status: "COMPLETED",
+        output: relativePdfPath,
+      },
+    });
+
+    return {
+      pdfPath: relativePdfPath,
+      alreadyExisted: false,
+    };
+  },
+  getTaskPdfPath: async (userId, taskId) => {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId, userId },
+      select: { id: true },
+    });
+
+    if (!task) {
+      throw new Error("Task not found or unauthorized");
+    }
+
+    const step = await prisma.taskStep.findFirst({
+      where: { taskId, stepName: "PDF_EXPORT", status: "COMPLETED" },
+      orderBy: { createdAt: "desc" },
+    });
+
+    if (!step?.output) {
+      throw new Error("PDF not generated yet");
+    }
+
+    const absolutePdfPath = path.resolve(process.cwd(), step.output);
+    if (!fs.existsSync(absolutePdfPath)) {
+      throw new Error("PDF file missing on server");
+    }
+
+    return {
+      absolutePdfPath,
+      relativePdfPath: step.output,
+    };
+  },
 };

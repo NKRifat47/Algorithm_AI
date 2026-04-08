@@ -16,6 +16,17 @@ const parseIfJsonString = (value) => {
   }
 };
 
+const removeAiEnginePdfPath = (value) => {
+  if (!value || typeof value !== "object") return value;
+
+  // We don't want to expose the AI engine's internal file path.
+  const cloned = structuredClone(value);
+  if (cloned?.data?.result?.pdf_path) {
+    delete cloned.data.result.pdf_path;
+  }
+  return cloned;
+};
+
 const createNewTask = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -34,8 +45,13 @@ const createNewTask = async (req, res) => {
         taskId: result.id,
         status: result.status,
         prompt: result.prompt,
-        aiResponse: parseIfJsonString(result.content),
+        aiResponse: removeAiEnginePdfPath(parseIfJsonString(result.content)),
         aiResponseRaw: typeof result.content === "string" ? result.content : null,
+        pdf: {
+          generated: false,
+          generateUrl: `/api/user/new-task/${result.id}/pdf`,
+          downloadUrl: `/api/user/new-task/${result.id}/pdf/download`,
+        },
         createdAt: result.createdAt,
       },
     });
@@ -158,4 +174,60 @@ export const NewTaskController = {
   getNewTaskData,
   getTaskById,
   continueTask,
+  generateTaskPdf: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { id: taskId } = req.params;
+
+      const result = await NewTaskService.generateTaskPdf(userId, taskId);
+
+      return res.status(httpStatus.OK).json({
+        success: true,
+        message: result.alreadyExisted
+          ? "PDF already generated for this task"
+          : "PDF generated successfully",
+        data: {
+          taskId,
+          pdf: {
+            path: result.pdfPath,
+            downloadUrl: `/api/user/new-task/${taskId}/pdf/download`,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("generateTaskPdf error:", error);
+
+      if (error instanceof DevBuildError) {
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      return res.status(httpStatus.BAD_REQUEST).json({
+        success: false,
+        message: error.message || "Failed to generate PDF",
+      });
+    }
+  },
+  downloadTaskPdf: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { id: taskId } = req.params;
+
+      const { absolutePdfPath } = await NewTaskService.getTaskPdfPath(
+        userId,
+        taskId,
+      );
+
+      return res.download(absolutePdfPath, `task-${taskId}.pdf`);
+    } catch (error) {
+      console.error("downloadTaskPdf error:", error);
+
+      return res.status(httpStatus.NOT_FOUND).json({
+        success: false,
+        message: error.message || "PDF not found",
+      });
+    }
+  },
 };
