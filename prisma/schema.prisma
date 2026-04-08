@@ -151,6 +151,7 @@ model Task {
 
   title  String
   prompt String
+  content String?
 
   status TaskStatus @default(PENDING)
 
