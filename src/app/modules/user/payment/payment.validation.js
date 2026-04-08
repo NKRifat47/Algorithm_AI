@@ -14,4 +14,3 @@ const createStripeCheckoutSessionSchema = z.object({
 export const UserPaymentValidation = {
   createStripeCheckoutSessionSchema,
 };
-

@@ -39,7 +39,8 @@ export const UserPaymentService = {
     }
 
     const finalSuccessUrl =
-      successUrl || `${frontendUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`;
+      successUrl ||
+      `${frontendUrl}/billing/success?session_id={CHECKOUT_SESSION_ID}`;
     const finalCancelUrl = cancelUrl || `${frontendUrl}/billing/cancel`;
 
     const session = await stripe.checkout.sessions.create({
@@ -72,7 +73,10 @@ export const UserPaymentService = {
         const interval = session?.metadata?.interval;
 
         if (!userId || !planId || !interval) {
-          throw new AppError(400, "Missing required metadata on Stripe session");
+          throw new AppError(
+            400,
+            "Missing required metadata on Stripe session",
+          );
         }
 
         const plan = await prisma.plan.findUnique({ where: { id: planId } });
@@ -91,9 +95,12 @@ export const UserPaymentService = {
 
         const startDate = new Date();
         const endDate =
-          interval === "yearly" ? addYears(startDate, 1) : addMonths(startDate, 1);
+          interval === "yearly"
+            ? addYears(startDate, 1)
+            : addMonths(startDate, 1);
 
-        const price = interval === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
+        const price =
+          interval === "yearly" ? plan.yearlyPrice : plan.monthlyPrice;
 
         await prisma.payment.create({
           data: {
@@ -128,4 +135,3 @@ export const UserPaymentService = {
     }
   },
 };
-

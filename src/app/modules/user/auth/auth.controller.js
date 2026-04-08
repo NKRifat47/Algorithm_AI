@@ -141,7 +141,11 @@ const forgotPassword = async (req, res) => {
 const verifyForgotPassword = async (req, res) => {
   try {
     const { email, otp } = req.body;
-    const resetToken = await OtpService.verifyForgotPasswordOtp(prisma, email, otp);
+    const resetToken = await OtpService.verifyForgotPasswordOtp(
+      prisma,
+      email,
+      otp,
+    );
 
     return res.json({
       success: true,
@@ -172,7 +176,8 @@ const resetPassword = async (req, res) => {
 
     return res.json({
       success: true,
-      message: "Password reset successfully. You can now login with your new password.",
+      message:
+        "Password reset successfully. You can now login with your new password.",
       data: null,
     });
   } catch (error) {

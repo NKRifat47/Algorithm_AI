@@ -17,4 +17,3 @@ router.post(
 router.post("/stripe/webhook", UserPaymentController.stripeWebhook);
 
 export const UserPaymentRouter = router;
-

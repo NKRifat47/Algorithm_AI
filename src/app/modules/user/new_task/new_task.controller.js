@@ -46,7 +46,8 @@ const createNewTask = async (req, res) => {
         status: result.status,
         prompt: result.prompt,
         aiResponse: removeAiEnginePdfPath(parseIfJsonString(result.content)),
-        aiResponseRaw: typeof result.content === "string" ? result.content : null,
+        aiResponseRaw:
+          typeof result.content === "string" ? result.content : null,
         responseType: NewTaskService.detectResponseType
           ? NewTaskService.detectResponseType(result.content)?.type
           : "text",
@@ -244,7 +245,10 @@ export const NewTaskController = {
       const userId = req.user.id;
       const { id: taskId } = req.params;
 
-      const result = await NewTaskService.generateTaskCodebaseZip(userId, taskId);
+      const result = await NewTaskService.generateTaskCodebaseZip(
+        userId,
+        taskId,
+      );
 
       return res.status(httpStatus.OK).json({
         success: true,

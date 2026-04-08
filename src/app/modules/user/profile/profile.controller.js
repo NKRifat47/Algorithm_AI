@@ -41,7 +41,10 @@ const updateProfile = async (req, res) => {
       updateData.avatar = avatar;
     }
 
-    const result = await UserProfileService.updateProfile(req.user.id, updateData);
+    const result = await UserProfileService.updateProfile(
+      req.user.id,
+      updateData,
+    );
 
     return res.status(httpStatus.OK).json({
       success: true,
