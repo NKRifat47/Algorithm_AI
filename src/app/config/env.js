@@ -14,6 +14,10 @@ const loadEnvVars = () => {
     "DATABASE_URL",
     "BACKEND_URL",
     "REDIS_URL",
+
+    // Stripe
+    "STRIPE_SECRET_KEY",
+    "STRIPE_WEBHOOK_SECRET",
   ];
 
   requiredVars.forEach((key) => {
@@ -58,6 +62,10 @@ const loadEnvVars = () => {
 
     // AI Engine
     AI_ENGINE_URL: process.env.AI_ENGINE_URL,
+
+    // Stripe
+    STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,
+    STRIPE_WEBHOOK_SECRET: process.env.STRIPE_WEBHOOK_SECRET,
   };
 };
 

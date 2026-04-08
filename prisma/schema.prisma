@@ -74,12 +74,15 @@ model User {
 model Plan {
   id    String @id @default(uuid())
   name  String
-  price Float
+  monthlyPrice Float
+  yearlyPrice Float
+  stripeMonthlyPriceId String?
+  stripeYearlyPriceId  String?
 
   requestLimit Int
   agentLimit   Int
 
-  features Json
+  features             String[] @default([])
 
   users         User[]
   subscriptions Subscription[]

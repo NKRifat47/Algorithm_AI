@@ -16,7 +16,13 @@ const app = express();
 // Global middlewares
 app.use(cors());
 app.use(cookieParser());
-app.use(express.json());
+app.use(
+  express.json({
+    verify: (req, res, buf) => {
+      req.rawBody = buf;
+    },
+  }),
+);
 app.use(passport.initialize());
 
 // Routes

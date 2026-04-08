@@ -109,8 +109,18 @@ export const AdminUsageBillingService = {
 
   getPlans: async (prisma) => {
     return await prisma.plan.findMany({
+      select: {
+        id: true,
+        name: true,
+        monthlyPrice: true,
+        yearlyPrice: true,
+        requestLimit: true,
+        agentLimit: true,
+        features: true,
+        createdAt: true,
+      },
       orderBy: {
-        price: "asc",
+        monthlyPrice: "asc",
       },
     });
   },
