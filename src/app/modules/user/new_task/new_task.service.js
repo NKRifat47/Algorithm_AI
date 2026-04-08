@@ -558,7 +558,11 @@ export const NewTaskService = {
       },
     });
 
-    return { zipPath: relativeZipPath, alreadyExisted: false, filesCount: files.length };
+    return {
+      zipPath: relativeZipPath,
+      alreadyExisted: false,
+      filesCount: files.length,
+    };
   },
   getTaskCodebaseZipPath: async (userId, taskId) => {
     const task = await prisma.task.findUnique({

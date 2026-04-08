@@ -56,4 +56,3 @@ export const UserPaymentController = {
   createStripeCheckoutSession,
   stripeWebhook,
 };
-
