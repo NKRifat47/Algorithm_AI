@@ -47,10 +47,19 @@ const createNewTask = async (req, res) => {
         prompt: result.prompt,
         aiResponse: removeAiEnginePdfPath(parseIfJsonString(result.content)),
         aiResponseRaw: typeof result.content === "string" ? result.content : null,
+        responseType: NewTaskService.detectResponseType
+          ? NewTaskService.detectResponseType(result.content)?.type
+          : "text",
         pdf: {
           generated: false,
           generateUrl: `/api/user/new-task/${result.id}/pdf`,
           downloadUrl: `/api/user/new-task/${result.id}/pdf/download`,
+        },
+        codebase: {
+          // frontend can show this button only when responseType === "codebase"
+          generated: false,
+          generateUrl: `/api/user/new-task/${result.id}/codebase`,
+          downloadUrl: `/api/user/new-task/${result.id}/codebase/download`,
         },
         createdAt: result.createdAt,
       },
@@ -227,6 +236,55 @@ export const NewTaskController = {
       return res.status(httpStatus.NOT_FOUND).json({
         success: false,
         message: error.message || "PDF not found",
+      });
+    }
+  },
+  generateTaskCodebaseZip: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { id: taskId } = req.params;
+
+      const result = await NewTaskService.generateTaskCodebaseZip(userId, taskId);
+
+      return res.status(httpStatus.OK).json({
+        success: true,
+        message: result.alreadyExisted
+          ? "Codebase ZIP already generated for this task"
+          : "Codebase ZIP generated successfully",
+        data: {
+          taskId,
+          filesCount: result.filesCount ?? null,
+          codebase: {
+            path: result.zipPath,
+            downloadUrl: `/api/user/new-task/${taskId}/codebase/download`,
+          },
+        },
+      });
+    } catch (error) {
+      console.error("generateTaskCodebaseZip error:", error);
+      return res.status(httpStatus.BAD_REQUEST).json({
+        success: false,
+        message: error.message || "Failed to generate codebase ZIP",
+      });
+    }
+  },
+  downloadTaskCodebaseZip: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { id: taskId } = req.params;
+
+      const { absoluteZipPath } = await NewTaskService.getTaskCodebaseZipPath(
+        userId,
+        taskId,
+      );
+
+      return res.download(absoluteZipPath, `task-${taskId}-codebase.zip`);
+    } catch (error) {
+      console.error("downloadTaskCodebaseZip error:", error);
+
+      return res.status(httpStatus.NOT_FOUND).json({
+        success: false,
+        message: error.message || "ZIP not found",
       });
     }
   },
