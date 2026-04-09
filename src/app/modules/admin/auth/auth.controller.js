@@ -16,7 +16,11 @@ const adminLogin = async (req, res) => {
     const result = await AdminAuthService.login(prisma, email, password);
 
     // Store refresh token in HttpOnly cookie (safer than JSON body)
-    res.cookie("refreshToken", result.tokens.refreshToken, getRefreshCookieOptions());
+    res.cookie(
+      "refreshToken",
+      result.tokens.refreshToken,
+      getRefreshCookieOptions(),
+    );
 
     return res.json({
       success: true,
@@ -175,7 +179,11 @@ const adminRefreshToken = async (req, res) => {
     const result = await AdminAuthService.refreshSession(prisma, refreshToken);
 
     // Rotate refresh token
-    res.cookie("refreshToken", result.tokens.refreshToken, getRefreshCookieOptions());
+    res.cookie(
+      "refreshToken",
+      result.tokens.refreshToken,
+      getRefreshCookieOptions(),
+    );
 
     return res.json({
       success: true,
