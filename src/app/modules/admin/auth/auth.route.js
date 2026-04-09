@@ -5,6 +5,8 @@ import { checkAuthMiddleware } from "../../../middleware/checkAuthMiddleware.js"
 const router = Router();
 
 router.post("/login", AdminAuthController.adminLogin);
+router.post("/refresh-token", AdminAuthController.adminRefreshToken);
+router.post("/logout", AdminAuthController.adminLogout);
 router.post("/forgot-password", AdminAuthController.adminForgotPassword);
 router.post("/verify", AdminAuthController.adminForgotPasswordVerify);
 router.post("/reset", AdminAuthController.adminForgotPasswordReset);
