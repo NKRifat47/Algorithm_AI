@@ -53,6 +53,38 @@ export const AdminAuthService = {
     };
   },
 
+  refreshSession: async (prisma, refreshToken) => {
+    if (!refreshToken) {
+      throw new DevBuildError("Refresh token is required", 400);
+    }
+
+    let payload;
+    try {
+      payload = jwt.verify(refreshToken, envVars.JWT_REFRESH_TOKEN);
+    } catch {
+      throw new DevBuildError("Invalid or expired refresh token", 401);
+    }
+
+    const user = await prisma.user.findUnique({
+      where: { id: payload.id },
+    });
+
+    if (!user || user.role !== "ADMIN") {
+      throw new DevBuildError("Invalid refresh token", 401);
+    }
+
+    const tokens = generateTokens(user);
+
+    return {
+      user: {
+        id: user.id,
+        email: user.email,
+        role: user.role,
+      },
+      tokens,
+    };
+  },
+
   sendForgotPasswordOtp: async (prisma, email) => {
     const user = await prisma.user.findUnique({
       where: { email },
