@@ -30,6 +30,9 @@ router.post(
   UserAuthController.login,
 );
 
+router.post("/refresh-token", UserAuthController.refreshToken);
+router.post("/logout", UserAuthController.logout);
+
 router.post(
   "/forgot-password",
   validateRequest(UserAuthValidation.forgotPasswordSchema),
