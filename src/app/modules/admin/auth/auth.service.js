@@ -74,10 +74,7 @@ export const AdminAuthService = {
     }
 
     const tokens = generateTokens(user);
-<<<<<<< HEAD
-=======
 
->>>>>>> 9689a90408c2e614802d1d05f162fb58eeb576a7
     return {
       user: {
         id: user.id,
