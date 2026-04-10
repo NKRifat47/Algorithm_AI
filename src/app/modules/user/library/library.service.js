@@ -1,4 +1,5 @@
 import prisma from "../../../prisma/client.js";
+import { Cache } from "../../../utils/cache.js";
 
 const listTemplates = async (userId, query) => {
   const page = query.page ?? 1;
@@ -20,52 +21,73 @@ const listTemplates = async (userId, query) => {
       : {}),
   };
 
-  if (query.favoritesOnly) {
-    const [total, items] = await Promise.all([
-      prisma.userFavorite.count({
-        where: { userId, template: { ...whereBase } },
-      }),
-      prisma.userFavorite.findMany({
-        where: { userId, template: { ...whereBase } },
-        include: { template: true },
-        orderBy: { id: "desc" },
-        skip,
-        take: limit,
-      }),
-    ]);
+  const favoritesOnly = Boolean(query.favoritesOnly);
 
-    return {
-      meta: { page, limit, total },
-      data: items.map((f) => ({
-        ...f.template,
-        isFavorite: true,
-      })),
-    };
-  }
-
-  const [total, items, favs] = await Promise.all([
-    prisma.template.count({ where: whereBase }),
-    prisma.template.findMany({
-      where: whereBase,
-      orderBy: { title: "asc" },
-      skip,
-      take: limit,
-    }),
-    prisma.userFavorite.findMany({
-      where: { userId },
-      select: { templateId: true },
-    }),
-  ]);
-
-  const favoriteSet = new Set(favs.map((f) => f.templateId));
-
-  return {
-    meta: { page, limit, total },
-    data: items.map((t) => ({
-      ...t,
-      isFavorite: favoriteSet.has(t.id),
-    })),
+  const normalizedQuery = {
+    page: Number(page),
+    limit: Number(limit),
+    q: q || "",
+    category: category || "",
+    favoritesOnly,
   };
+
+  const cacheKey = `library:templates:user:${userId}:${Buffer.from(
+    JSON.stringify(normalizedQuery),
+    "utf8",
+  ).toString("base64url")}`;
+
+  return await Cache.getOrSetJson(
+    cacheKey,
+    async () => {
+      if (favoritesOnly) {
+        const [total, items] = await Promise.all([
+          prisma.userFavorite.count({
+            where: { userId, template: { ...whereBase } },
+          }),
+          prisma.userFavorite.findMany({
+            where: { userId, template: { ...whereBase } },
+            include: { template: true },
+            orderBy: { id: "desc" },
+            skip,
+            take: limit,
+          }),
+        ]);
+
+        return {
+          meta: { page, limit, total },
+          data: items.map((f) => ({
+            ...f.template,
+            isFavorite: true,
+          })),
+        };
+      }
+
+      const [total, items, favs] = await Promise.all([
+        prisma.template.count({ where: whereBase }),
+        prisma.template.findMany({
+          where: whereBase,
+          orderBy: { title: "asc" },
+          skip,
+          take: limit,
+        }),
+        prisma.userFavorite.findMany({
+          where: { userId },
+          select: { templateId: true },
+        }),
+      ]);
+
+      const favoriteSet = new Set(favs.map((f) => f.templateId));
+
+      return {
+        meta: { page, limit, total },
+        data: items.map((t) => ({
+          ...t,
+          isFavorite: favoriteSet.has(t.id),
+        })),
+      };
+    },
+    30,
+  );
 };
 
 const toggleFavorite = async (userId, templateId) => {
@@ -84,10 +106,12 @@ const toggleFavorite = async (userId, templateId) => {
 
   if (existing) {
     await prisma.userFavorite.delete({ where: { id: existing.id } });
+    await Cache.delByPrefix(`library:templates:user:${userId}:`);
     return { templateId, isFavorite: false };
   }
 
   await prisma.userFavorite.create({ data: { userId, templateId } });
+  await Cache.delByPrefix(`library:templates:user:${userId}:`);
   return { templateId, isFavorite: true };
 };
 

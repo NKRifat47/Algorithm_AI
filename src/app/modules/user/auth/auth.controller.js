@@ -3,6 +3,14 @@ import { UserAuthService } from "./auth.service.js";
 import { OtpService } from "../../otp/otp.service.js";
 import prisma from "../../../prisma/client.js";
 import DevBuildError from "../../../lib/DevBuildError.js";
+import { envVars } from "../../../config/env.js";
+
+const getRefreshCookieOptions = () => ({
+  httpOnly: true,
+  secure: envVars.NODE_ENV === "production",
+  sameSite: envVars.NODE_ENV === "production" ? "none" : "lax",
+  path: "/api/user/auth/refresh-token",
+});
 
 const register = async (req, res) => {
   try {
@@ -89,10 +97,18 @@ const login = async (req, res) => {
     const { email, password } = req.body;
     const result = await UserAuthService.login(prisma, email, password);
 
+    // Store refresh token in HttpOnly cookie (safer than JSON body)
+    res.cookie("refreshToken", result.tokens.refreshToken, getRefreshCookieOptions());
+
     return res.json({
       success: true,
       message: "User logged in successfully.",
-      data: result,
+      data: {
+        user: result.user,
+        tokens: {
+          accessToken: result.tokens.accessToken,
+        },
+      },
     });
   } catch (error) {
     console.error("login error:", error);
@@ -231,11 +247,66 @@ const changePassword = async (req, res) => {
   }
 };
 
+const refreshToken = async (req, res) => {
+  try {
+    const rt = req.cookies?.refreshToken;
+    const result = await UserAuthService.refreshSession(prisma, rt);
+
+    // Rotate refresh token
+    res.cookie("refreshToken", result.tokens.refreshToken, getRefreshCookieOptions());
+
+    return res.json({
+      success: true,
+      message: "Access token refreshed successfully.",
+      data: {
+        user: result.user,
+        tokens: {
+          accessToken: result.tokens.accessToken,
+        },
+      },
+    });
+  } catch (error) {
+    console.error("refreshToken error:", error);
+
+    if (error instanceof DevBuildError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to refresh token",
+    });
+  }
+};
+
+const logout = async (req, res) => {
+  try {
+    res.clearCookie("refreshToken", getRefreshCookieOptions());
+
+    return res.json({
+      success: true,
+      message: "Logged out successfully",
+      data: null,
+    });
+  } catch (error) {
+    console.error("logout error:", error);
+    return res.status(500).json({
+      success: false,
+      message: "Failed to logout",
+    });
+  }
+};
+
 export const UserAuthController = {
   register,
   sendOtp,
   verifyOtp,
   login,
+  refreshToken,
+  logout,
   forgotPassword,
   verifyForgotPassword,
   resetPassword,

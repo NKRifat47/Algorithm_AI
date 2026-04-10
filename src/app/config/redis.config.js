@@ -13,3 +13,9 @@ export const connectRedis = async () => {
     console.log("✈️ Redis is connected");
   }
 };
+
+export const disconnectRedis = async () => {
+  if (redisClient.isOpen) {
+    await redisClient.quit();
+  }
+};
