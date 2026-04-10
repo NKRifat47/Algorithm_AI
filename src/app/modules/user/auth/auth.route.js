@@ -3,6 +3,7 @@ import { UserAuthController } from "./auth.controller.js";
 import { UserAuthValidation } from "./auth.validation.js";
 import validateRequest from "../../../middleware/validateRequest.js";
 import { checkAuthMiddleware } from "../../../middleware/checkAuthMiddleware.js";
+import { rateLimit } from "../../../middleware/rateLimit.js";
 
 const router = Router();
 
@@ -14,18 +15,39 @@ router.post(
 
 router.post(
   "/send-otp",
+  rateLimit({
+    keyPrefix: "rl:user:send-otp",
+    windowSeconds: 60,
+    max: 5,
+    message: "Too many OTP requests. Please wait and try again.",
+    getKeySuffix: (req) => req.body?.email || req.ip,
+  }),
   validateRequest(UserAuthValidation.sendOtpSchema),
   UserAuthController.sendOtp,
 );
 
 router.post(
   "/verify-otp",
+  rateLimit({
+    keyPrefix: "rl:user:verify-otp",
+    windowSeconds: 60,
+    max: 12,
+    message: "Too many OTP verification attempts. Please wait and try again.",
+    getKeySuffix: (req) => req.body?.email || req.ip,
+  }),
   validateRequest(UserAuthValidation.verifyOtpSchema),
   UserAuthController.verifyOtp,
 );
 
 router.post(
   "/login",
+  rateLimit({
+    keyPrefix: "rl:user:login",
+    windowSeconds: 60,
+    max: 10,
+    message: "Too many login attempts. Please wait and try again.",
+    getKeySuffix: (req) => req.body?.email || req.ip,
+  }),
   validateRequest(UserAuthValidation.loginSchema),
   UserAuthController.login,
 );
@@ -35,12 +57,26 @@ router.post("/logout", UserAuthController.logout);
 
 router.post(
   "/forgot-password",
+  rateLimit({
+    keyPrefix: "rl:user:forgot-password",
+    windowSeconds: 60,
+    max: 5,
+    message: "Too many requests. Please wait and try again.",
+    getKeySuffix: (req) => req.body?.email || req.ip,
+  }),
   validateRequest(UserAuthValidation.forgotPasswordSchema),
   UserAuthController.forgotPassword,
 );
 
 router.post(
   "/verify-forgot-password",
+  rateLimit({
+    keyPrefix: "rl:user:verify-forgot-password",
+    windowSeconds: 60,
+    max: 12,
+    message: "Too many attempts. Please wait and try again.",
+    getKeySuffix: (req) => req.body?.email || req.ip,
+  }),
   validateRequest(UserAuthValidation.verifyForgotPasswordSchema),
   UserAuthController.verifyForgotPassword,
 );
