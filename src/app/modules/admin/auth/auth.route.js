@@ -5,13 +5,6 @@ import { rateLimit } from "../../../middleware/rateLimit.js";
 
 const router = Router();
 
-<<<<<<< HEAD
-router.post("/login", AdminAuthController.adminLogin);
-router.post("/refresh-token", AdminAuthController.adminRefreshToken);
-router.post("/logout", AdminAuthController.adminLogout);
-router.post("/forgot-password", AdminAuthController.adminForgotPassword);
-router.post("/verify", AdminAuthController.adminForgotPasswordVerify);
-=======
 router.post(
   "/login",
   rateLimit({
@@ -47,7 +40,6 @@ router.post(
   }),
   AdminAuthController.adminForgotPasswordVerify,
 );
->>>>>>> 9689a90408c2e614802d1d05f162fb58eeb576a7
 router.post("/reset", AdminAuthController.adminForgotPasswordReset);
 router.post(
   "/change-password",
