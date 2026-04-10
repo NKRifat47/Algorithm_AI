@@ -1,6 +1,6 @@
 import app from "./app.js";
 import { envVars } from "./app/config/env.js";
-import { connectRedis } from "./app/config/redis.config.js";
+import { connectRedis, disconnectRedis } from "./app/config/redis.config.js";
 import prisma from "./app/prisma/client.js";
 
 let server;
@@ -37,10 +37,12 @@ process.on("unhandledRejection", async (err) => {
   if (server) {
     server.close(async () => {
       await prisma.$disconnect();
+      await disconnectRedis();
       process.exit(1);
     });
   } else {
     await prisma.$disconnect();
+    await disconnectRedis();
     process.exit(1);
   }
 });
@@ -54,10 +56,12 @@ process.on("uncaughtException", async (err) => {
   if (server) {
     server.close(async () => {
       await prisma.$disconnect();
+      await disconnectRedis();
       process.exit(1);
     });
   } else {
     await prisma.$disconnect();
+    await disconnectRedis();
     process.exit(1);
   }
 });
@@ -71,6 +75,7 @@ process.on("SIGTERM", async () => {
   if (server) {
     server.close(async () => {
       await prisma.$disconnect();
+      await disconnectRedis();
       process.exit(0);
     });
   }
@@ -85,6 +90,7 @@ process.on("SIGINT", async () => {
   if (server) {
     server.close(async () => {
       await prisma.$disconnect();
+      await disconnectRedis();
       process.exit(0);
     });
   }
