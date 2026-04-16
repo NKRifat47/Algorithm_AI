@@ -7,7 +7,7 @@ import { envVars } from "../../../config/env.js";
 import { redisClient } from "../../../config/redis.config.js";
 import DevBuildError from "../../../lib/DevBuildError.js";
 
-const OTP_EXPIRATION = 2 * 60; // 2 minutes
+const OTP_EXPIRATION = 10 * 60; // 10 minutes
 
 const generateOtp = (length = 6) =>
   crypto.randomInt(10 ** (length - 1), 10 ** length).toString();
