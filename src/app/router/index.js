@@ -18,6 +18,8 @@ const moduleRoutes = [
     path: "/otp",
     route: OtpRouter,
   },
+
+  // Admin Route Start From Here
   {
     path: "/admin/auth",
     route: AdminAuthRouter,

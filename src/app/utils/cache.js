@@ -19,7 +19,8 @@ export const Cache = {
    */
   getOrSetJson: async (key, compute, ttlSeconds = DEFAULT_TTL_SECONDS) => {
     if (!key) throw new Error("Cache key is required");
-    if (typeof compute !== "function") throw new Error("compute must be a function");
+    if (typeof compute !== "function")
+      throw new Error("compute must be a function");
 
     if (!isRedisReady()) {
       return await compute();
@@ -60,4 +61,3 @@ export const Cache = {
     return deleted;
   },
 };
-
