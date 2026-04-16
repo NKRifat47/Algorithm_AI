@@ -16,8 +16,14 @@ const app = express();
 // Global middlewares
 app.use(
   cors({
-    origin: true,
+    origin: [
+      "https://kenneth-mckean-frontend.vercel.app",
+      "http://localhost:5173",
+    ],
     credentials: true,
+    methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+    exposedHeaders: ["Content-Disposition"],
   }),
 );
 app.use(cookieParser());
