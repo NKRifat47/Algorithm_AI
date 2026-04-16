@@ -5,7 +5,7 @@ import DevBuildError from "../../lib/DevBuildError.js";
 import jwt from "jsonwebtoken";
 import { envVars } from "../../config/env.js";
 
-const OTP_EXPIRATION = 2 * 60; // 2 minutes
+const OTP_EXPIRATION = 10 * 60; // 10 minutes
 
 // HELPERS for OTP generation
 
