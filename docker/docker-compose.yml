@@ -3,7 +3,7 @@ version: "3.9"
 services:
   backend:
     image: nkrifat47/algorithm-ai-backend:1.0
-    container_name: algorithm-backend
+    container_name: algorithm-ai-backend
     ports:
       - "5000:5000"
       - "5555:5555"
@@ -16,7 +16,7 @@ services:
 
   postgres:
     image: postgres:15
-    container_name: algorithm-postgres
+    container_name: algorithm-ai-postgres
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -28,7 +28,7 @@ services:
 
   redis:
     image: redis:7
-    container_name: algorithm-redis
+    container_name: algorithm-ai-redis
     ports:
       - "6379:6379"
 
