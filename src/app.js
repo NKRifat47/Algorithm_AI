@@ -26,7 +26,7 @@ app.use(
       "Content-Type",
       "Authorization",
       "Accept",
-      "X-Requested-With",
+      "X-Requested-With", 
     ],
     exposedHeaders: ["Content-Disposition"],
   }),
