@@ -6,7 +6,7 @@ import { createMulterUpload } from "../config/multer.config.js";
 export const uploadAvatar = createMulterUpload({
   folder: "avatars",
   allowedTypes: /jpeg|jpg|png|webp/,
-  maxSize: 2 * 1024 * 1024, // 2MB for avatars
+  maxSize: 10 * 1024 * 1024, // 10MB for avatars
 });
 
 /**
