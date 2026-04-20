@@ -28,7 +28,16 @@ const getProfile = async (req, res) => {
 const updateProfile = async (req, res) => {
   try {
     const { id } = req.user;
-    const data = await AdminProfileService.updateProfile(id, req.body);
+    const updateData = {
+      ...req.body,
+    };
+
+
+    if (req.file) {
+      updateData.avatarUrl = `/uploads/avatars/${req.file.filename}`;
+    }
+
+    const data = await AdminProfileService.updateProfile(id, updateData);
     return res.json({
       success: true,
       message: "Profile updated successfully",
