@@ -32,7 +32,6 @@ const updateProfile = async (req, res) => {
       ...req.body,
     };
 
-
     if (req.file) {
       updateData.avatarUrl = `/uploads/avatars/${req.file.filename}`;
     }
