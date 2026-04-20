@@ -21,13 +21,13 @@ passport.use(
           return done(null, false, { message: "Incorrect email." });
         }
 
-        if (!user.passwordHash) {
+        if (!user.password) {
           return done(null, false, {
             message: "Please login with your social account.",
           });
         }
 
-        const isMatch = await bcrypt.compare(password, user.passwordHash);
+        const isMatch = await bcrypt.compare(password, user.password);
 
         if (!isMatch) {
           return done(null, false, { message: "Incorrect password." });
@@ -56,9 +56,20 @@ passport.use(
     },
     async (accessToken, refreshToken, profile, done) => {
       try {
-        const email = profile.emails[0].value;
-        const name = profile.displayName;
-        const avatarUrl = profile.photos[0]?.value;
+        const email = profile.emails?.[0]?.value;
+        const firstName =
+          profile.name?.givenName ||
+          profile.displayName?.trim()?.split(/\s+/)?.[0] ||
+          "";
+        const lastName =
+          profile.name?.familyName ||
+          profile.displayName?.trim()?.split(/\s+/)?.slice(1)?.join(" ") ||
+          "";
+        const avatar = profile.photos?.[0]?.value || null;
+
+        if (!email) {
+          return done(null, false, { message: "Google account has no email." });
+        }
 
         let user = await prisma.user.findUnique({
           where: { email },
@@ -68,11 +79,23 @@ passport.use(
           user = await prisma.user.create({
             data: {
               email,
-              name,
-              avatarUrl,
+              firstName,
+              lastName,
+              avatar,
+              password: null,
               isVerified: true,
               oauthProvider: "google",
               oauthProviderId: profile.id,
+            },
+          });
+        } else if (!user.oauthProviderId || user.oauthProvider !== "google") {
+          user = await prisma.user.update({
+            where: { email },
+            data: {
+              oauthProvider: "google",
+              oauthProviderId: profile.id,
+              isVerified: true,
+              avatar: user.avatar || avatar,
             },
           });
         }

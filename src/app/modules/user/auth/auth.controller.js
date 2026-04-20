@@ -4,6 +4,7 @@ import { OtpService } from "../../otp/otp.service.js";
 import prisma from "../../../prisma/client.js";
 import DevBuildError from "../../../lib/DevBuildError.js";
 import { envVars } from "../../../config/env.js";
+import { generateTokens } from "../../../utils/generateToken.js";
 
 const getRefreshCookieOptions = () => ({
   httpOnly: true,
@@ -308,6 +309,37 @@ const logout = async (req, res) => {
   }
 };
 
+const googleCallback = async (req, res) => {
+  try {
+    // passport sets req.user
+    const user = req.user;
+    if (!user) {
+      throw new DevBuildError("Google authentication failed", 401);
+    }
+
+    const tokens = generateTokens(user);
+
+    // Store refresh token in HttpOnly cookie (same as login)
+    res.cookie("refreshToken", tokens.refreshToken, getRefreshCookieOptions());
+
+    const frontEndBase =
+      envVars.FRONT_END_URL || "http://localhost:5173";
+    const redirectUrl = `${frontEndBase.replace(/\/$/, "")}/auth/google/success?accessToken=${encodeURIComponent(
+      tokens.accessToken,
+    )}`;
+
+    return res.redirect(redirectUrl);
+  } catch (error) {
+    console.error("googleCallback error:", error);
+
+    const frontEndBase = envVars.FRONT_END_URL || "http://localhost:5173";
+    const redirectUrl = `${frontEndBase.replace(/\/$/, "")}/auth/google/success?error=${encodeURIComponent(
+      error?.message || "Google authentication failed",
+    )}`;
+    return res.redirect(redirectUrl);
+  }
+};
+
 export const UserAuthController = {
   register,
   sendOtp,
@@ -319,4 +351,5 @@ export const UserAuthController = {
   verifyForgotPassword,
   resetPassword,
   changePassword,
+  googleCallback,
 };

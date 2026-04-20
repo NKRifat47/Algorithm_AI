@@ -4,6 +4,7 @@ import { UserAuthValidation } from "./auth.validation.js";
 import validateRequest from "../../../middleware/validateRequest.js";
 import { checkAuthMiddleware } from "../../../middleware/checkAuthMiddleware.js";
 import { rateLimit } from "../../../middleware/rateLimit.js";
+import passport from "passport";
 
 const router = Router();
 
@@ -54,6 +55,31 @@ router.post(
 
 router.post("/refresh-token", UserAuthController.refreshToken);
 router.post("/logout", UserAuthController.logout);
+
+// Google OAuth
+router.get(
+  "/google",
+  passport.authenticate("google", {
+    scope: ["profile", "email"],
+    session: false,
+  }),
+);
+
+router.get(
+  "/google/callback",
+  passport.authenticate("google", {
+    session: false,
+    failureRedirect: "/api/user/auth/google/failure",
+  }),
+  UserAuthController.googleCallback,
+);
+
+router.get("/google/failure", (req, res) => {
+  return res.status(401).json({
+    success: false,
+    message: "Google authentication failed",
+  });
+});
 
 router.post(
   "/forgot-password",

@@ -60,6 +60,13 @@ export const UserAuthService = {
       throw new DevBuildError("Please verify your email first", 403);
     }
 
+    if (!user.password) {
+      throw new DevBuildError(
+        "This account was created with Google. Please login with Google.",
+        401,
+      );
+    }
+
     const isMatch = await bcrypt.compare(password, user.password);
     if (!isMatch) {
       throw new DevBuildError("Invalid email or password", 401);
