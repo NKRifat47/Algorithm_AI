@@ -6,7 +6,7 @@ import { createMulterUpload } from "../config/multer.config.js";
 export const uploadAvatar = createMulterUpload({
   folder: "avatars",
   allowedTypes: /jpeg|jpg|png|webp/,
-  maxSize: 10 * 1024 * 1024, // 10MB for avatars
+  maxSize: 20 * 1024 * 1024, // 20MB for avatars
 });
 
 /**
@@ -15,7 +15,7 @@ export const uploadAvatar = createMulterUpload({
 export const uploadEssay = createMulterUpload({
   folder: "essays",
   allowedTypes: /jpeg|jpg|png|webp|audio|mpeg|wav|ogg|mp3|pdf|doc|docx/,
-  maxSize: 10 * 1024 * 1024, // 10MB
+  maxSize: 20 * 1024 * 1024, // 20MB
 });
 
 // Default export for backward compatibility if needed
