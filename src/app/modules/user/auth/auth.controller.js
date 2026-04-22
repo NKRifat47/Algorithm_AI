@@ -322,8 +322,7 @@ const googleCallback = async (req, res) => {
     // Store refresh token in HttpOnly cookie (same as login)
     res.cookie("refreshToken", tokens.refreshToken, getRefreshCookieOptions());
 
-    const frontEndBase =
-      envVars.FRONT_END_URL || "http://localhost:5173";
+    const frontEndBase = envVars.FRONT_END_URL || "http://localhost:5173";
     const redirectUrl = `${frontEndBase.replace(/\/$/, "")}/auth/google/success?accessToken=${encodeURIComponent(
       tokens.accessToken,
     )}`;

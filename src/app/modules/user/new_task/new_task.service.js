@@ -24,10 +24,6 @@ const getAiOutputText = (rawContent) => {
 };
 
 const extractCodeFilesFromText = (text) => {
-  // Heuristics: look for patterns like:
-  // - "```path/to/file.ext\n...\n```"
-  // - "### path/to/file.ext\n```lang\n...\n```"
-  // - "File: path/to/file.ext\n```...\n```"
   if (!text || typeof text !== "string") return [];
 
   const files = [];

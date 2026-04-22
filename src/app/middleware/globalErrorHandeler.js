@@ -11,7 +11,7 @@ export const globalErrorHandler = (err, req, res, next) => {
   let message = "Something went wrong!";
   let errorSource = [];
 
-  // ✅ Prisma Known Errors
+
   if (err instanceof Prisma.PrismaClientKnownRequestError) {
     switch (err.code) {
       case "P2002":
