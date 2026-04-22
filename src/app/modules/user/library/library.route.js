@@ -22,7 +22,7 @@ router.get(
   LibraryController.listFavorites,
 );
 
-// Toggle favourite (heart icon)
+// Toggle favourite
 router.post(
   "/templates/:templateId/favorite",
   checkAuthMiddleware("USER"),

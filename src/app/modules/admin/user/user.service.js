@@ -3,8 +3,6 @@ import DevBuildError from "../../../lib/DevBuildError.js";
 
 export const AdminUserService = {
   getAllUsers: async (prisma) => {
-    // Fetch users with their plan information, excluding ADMIN users generally,
-    // or just fetch all users who have ROLE = 'USER'
     const users = await prisma.user.findMany({
       where: {
         role: "USER",
@@ -26,12 +24,11 @@ export const AdminUserService = {
       },
     });
 
-    // Format the result to match what the frontend likely needs
     return users.map((user) => ({
       id: user.id,
       name: `${user.firstName || ""} ${user.lastName || ""}`.trim() || "N/A",
       email: user.email,
-      plan: user.plan?.name || "N/A", // Fallback to Free if no plan is assigned
+      plan: user.plan?.name || "N/A",
       createdAt: user.createdAt,
     }));
   },
@@ -72,7 +69,6 @@ export const AdminUserService = {
       await tx.message.deleteMany({ where: { taskId: { in: taskIds } } });
       await tx.task.deleteMany({ where: { userId } });
 
-      // 7. Delete Projects and Project related records (websites, secrets, integrations)
       const projects = await tx.project.findMany({
         where: { userId },
         select: { id: true },

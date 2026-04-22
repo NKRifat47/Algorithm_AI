@@ -13,7 +13,6 @@ router.post(
   UserPaymentController.createStripeCheckoutSession,
 );
 
-// Stripe webhook (no auth)
 router.post("/stripe/webhook", UserPaymentController.stripeWebhook);
 
 export const UserPaymentRouter = router;

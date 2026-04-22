@@ -12,11 +12,9 @@ export async function generateUniqueUsername(prisma, name) {
     });
 
     if (!existingUser) {
-      // ✅ Unique found
       return username;
     }
 
-    // Otherwise increment and try again
     username = `${base}${counter}`;
     counter++;
   }

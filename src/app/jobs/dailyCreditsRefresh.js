@@ -5,8 +5,6 @@ const DEFAULT_DAILY_CREDITS = 300;
 const DEFAULT_TZ = "America/New_York";
 
 function getUsMidnightUtcDate(now = new Date(), tz = DEFAULT_TZ) {
-  // Build a "YYYY-MM-DD" for the given timezone, then interpret it as midnight
-  // in that timezone, and return the equivalent UTC Date.
   const parts = new Intl.DateTimeFormat("en-CA", {
     timeZone: tz,
     year: "numeric",
@@ -19,8 +17,6 @@ function getUsMidnightUtcDate(now = new Date(), tz = DEFAULT_TZ) {
   const d = parts.find((p) => p.type === "day")?.value;
   const localDateStr = `${y}-${m}-${d}`;
 
-  // Convert "local midnight" to a UTC date by asking what time it is in UTC
-  // when the timezone shows 00:00:00.
   const asIfUtc = new Date(`${localDateStr}T00:00:00.000Z`);
   const tzOffsetMs =
     new Date(
@@ -89,4 +85,3 @@ export function startDailyCreditsRefreshCron({
     { timezone: tz },
   );
 }
-

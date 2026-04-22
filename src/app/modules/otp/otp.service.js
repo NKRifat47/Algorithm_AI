@@ -119,7 +119,7 @@ export const OtpService = {
     });
   },
 
-  // ✅ Verify Forgot Password OTP & Return Token
+  // Verify Forgot Password OTP & Return Token
   verifyForgotPasswordOtp: async (prisma, email, otp) => {
     const redisKey = `forgot-password:${email}`;
     const savedOtp = await redisClient.get(redisKey);
