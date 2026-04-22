@@ -52,7 +52,7 @@ model User {
   oauthProvider   String?
   oauthProviderId String?
 
-  credits Int @default(0)
+  credits Int @default(300)
 
   planId String?
   plan   Plan?   @relation(fields: [planId], references: [id])

@@ -5,6 +5,8 @@ import { generateTokens } from "../../../utils/generateToken.js";
 import { envVars } from "../../../config/env.js";
 import { redisClient } from "../../../config/redis.config.js";
 
+const FREE_CREDITS_ON_SIGNUP = 300;
+
 export const UserAuthService = {
   register: async (prisma, userData) => {
     const { firstName, lastName, email, password } = userData;
@@ -29,6 +31,7 @@ export const UserAuthService = {
         email,
         password: hashedPassword,
         isVerified: false,
+        credits: FREE_CREDITS_ON_SIGNUP,
       },
     });
 
@@ -81,6 +84,7 @@ export const UserAuthService = {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        credits: user.credits,
       },
       tokens,
     };
@@ -115,6 +119,7 @@ export const UserAuthService = {
         firstName: user.firstName,
         lastName: user.lastName,
         role: user.role,
+        credits: user.credits,
       },
       tokens,
     };

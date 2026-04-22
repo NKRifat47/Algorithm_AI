@@ -1,6 +1,12 @@
 import { NewTaskService } from "./new_task.service.js";
 import httpStatus from "http-status";
 import DevBuildError from "../../../lib/DevBuildError.js";
+import prisma from "../../../prisma/client.js";
+import {
+  chargeCredits,
+  refundCredits,
+  CREDIT_COSTS,
+} from "../../../utils/credits.js";
 
 const parseIfJsonString = (value) => {
   if (typeof value !== "string") return value;
@@ -28,9 +34,17 @@ const removeAiEnginePdfPath = (value) => {
 };
 
 const createNewTask = async (req, res) => {
+  const userId = req.user.id;
+  let charged = false;
   try {
-    const userId = req.user.id;
     const { prompt, projectId, title } = req.body;
+
+    await chargeCredits(prisma, userId, {
+      amount: CREDIT_COSTS.AI_QUERY,
+      reason: "AI_QUERY",
+      meta: { endpoint: "new-task:create" },
+    });
+    charged = true;
 
     const result = await NewTaskService.handleNewTask(userId, {
       prompt,
@@ -67,6 +81,18 @@ const createNewTask = async (req, res) => {
     });
   } catch (error) {
     console.error("createNewTask error:", error);
+
+    if (charged) {
+      try {
+        await refundCredits(prisma, userId, {
+          amount: CREDIT_COSTS.AI_QUERY,
+          reason: "AI_QUERY_FAILED_REFUND",
+          meta: { endpoint: "new-task:create" },
+        });
+      } catch (refundError) {
+        console.error("createNewTask refund error:", refundError);
+      }
+    }
 
     if (error instanceof DevBuildError) {
       return res.status(error.statusCode).json({
@@ -139,8 +165,9 @@ const getTaskById = async (req, res) => {
 };
 
 const continueTask = async (req, res) => {
+  const userId = req.user.id;
+  let charged = false;
   try {
-    const userId = req.user.id;
     const { id } = req.params;
     const { prompt } = req.body;
 
@@ -150,6 +177,13 @@ const continueTask = async (req, res) => {
         message: "Prompt is required",
       });
     }
+
+    await chargeCredits(prisma, userId, {
+      amount: CREDIT_COSTS.AI_QUERY,
+      reason: "AI_QUERY",
+      meta: { endpoint: "new-task:continue", taskId: id },
+    });
+    charged = true;
 
     const result = await NewTaskService.continueTask(userId, id, prompt);
 
@@ -164,6 +198,18 @@ const continueTask = async (req, res) => {
     });
   } catch (error) {
     console.error("continueTask error:", error);
+
+    if (charged) {
+      try {
+        await refundCredits(prisma, userId, {
+          amount: CREDIT_COSTS.AI_QUERY,
+          reason: "AI_QUERY_FAILED_REFUND",
+          meta: { endpoint: "new-task:continue" },
+        });
+      } catch (refundError) {
+        console.error("continueTask refund error:", refundError);
+      }
+    }
 
     if (error instanceof DevBuildError) {
       return res.status(error.statusCode).json({
@@ -185,11 +231,19 @@ export const NewTaskController = {
   getTaskById,
   continueTask,
   generateTaskPdf: async (req, res) => {
+    const userId = req.user.id;
     try {
-      const userId = req.user.id;
       const { id: taskId } = req.params;
 
       const result = await NewTaskService.generateTaskPdf(userId, taskId);
+
+      if (!result.alreadyExisted) {
+        await chargeCredits(prisma, userId, {
+          amount: CREDIT_COSTS.PDF_EXPORT,
+          reason: "PDF_EXPORT",
+          meta: { endpoint: "new-task:pdf", taskId },
+        });
+      }
 
       return res.status(httpStatus.OK).json({
         success: true,
@@ -241,14 +295,22 @@ export const NewTaskController = {
     }
   },
   generateTaskCodebaseZip: async (req, res) => {
+    const userId = req.user.id;
     try {
-      const userId = req.user.id;
       const { id: taskId } = req.params;
 
       const result = await NewTaskService.generateTaskCodebaseZip(
         userId,
         taskId,
       );
+
+      if (!result.alreadyExisted) {
+        await chargeCredits(prisma, userId, {
+          amount: CREDIT_COSTS.CODEBASE_EXPORT,
+          reason: "CODEBASE_EXPORT",
+          meta: { endpoint: "new-task:codebase", taskId },
+        });
+      }
 
       return res.status(httpStatus.OK).json({
         success: true,
@@ -266,6 +328,12 @@ export const NewTaskController = {
       });
     } catch (error) {
       console.error("generateTaskCodebaseZip error:", error);
+      if (error instanceof DevBuildError) {
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message,
+        });
+      }
       return res.status(httpStatus.BAD_REQUEST).json({
         success: false,
         message: error.message || "Failed to generate codebase ZIP",

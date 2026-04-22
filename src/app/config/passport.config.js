@@ -5,6 +5,8 @@ import bcrypt from "bcrypt";
 import prisma from "../prisma/client.js";
 import { envVars } from "../config/env.js";
 
+const FREE_CREDITS_ON_SIGNUP = 300;
+
 passport.use(
   new LocalStrategy(
     {
@@ -86,6 +88,7 @@ passport.use(
               isVerified: true,
               oauthProvider: "google",
               oauthProviderId: profile.id,
+              credits: FREE_CREDITS_ON_SIGNUP,
             },
           });
         } else if (!user.oauthProviderId || user.oauthProvider !== "google") {
