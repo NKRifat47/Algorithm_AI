@@ -80,10 +80,10 @@ export function startDailyCreditsRefreshCron({
       try {
         const { updatedUsers } = await runDailyCreditsRefresh({ credits, tz });
         console.log(
-          `✅ Daily credits refresh ran (${tz}). Users refreshed: ${updatedUsers}`,
+          `Daily credits refresh ran (${tz}). Users refreshed: ${updatedUsers}`,
         );
       } catch (err) {
-        console.error("❌ Daily credits refresh failed:", err);
+        console.error(" Daily credits refresh failed:", err);
       }
     },
     { timezone: tz },
