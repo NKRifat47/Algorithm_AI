@@ -53,6 +53,7 @@ model User {
   oauthProviderId String?
 
   credits Int @default(300)
+  lastCreditsRefreshAt DateTime?
 
   planId String?
   plan   Plan?   @relation(fields: [planId], references: [id])
