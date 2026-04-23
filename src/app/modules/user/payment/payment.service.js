@@ -15,6 +15,21 @@ const addYears = (date, years) => {
 };
 
 export const UserPaymentService = {
+  getPlans: async (prisma) => {
+    return prisma.plan.findMany({
+      select: {
+        id: true,
+        name: true,
+        monthlyPrice: true,
+        yearlyPrice: true,
+        requestLimit: true,
+        agentLimit: true,
+        features: true,
+      },
+      orderBy: { monthlyPrice: "asc" },
+    });
+  },
+
   createStripeCheckoutSession: async (
     prisma,
     { userId, planId, interval, successUrl, cancelUrl, frontendUrl },

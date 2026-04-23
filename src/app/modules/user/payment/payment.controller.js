@@ -52,7 +52,21 @@ const stripeWebhook = async (req, res, next) => {
   }
 };
 
+const getPlans = async (req, res, next) => {
+  try {
+    const data = await UserPaymentService.getPlans(prisma);
+    return res.json({
+      success: true,
+      message: "Plans retrieved successfully",
+      data,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 export const UserPaymentController = {
+  getPlans,
   createStripeCheckoutSession,
   stripeWebhook,
 };

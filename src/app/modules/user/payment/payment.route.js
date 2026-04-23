@@ -6,6 +6,8 @@ import { UserPaymentValidation } from "./payment.validation.js";
 
 const router = Router();
 
+router.get("/plans", checkAuthMiddleware("USER"), UserPaymentController.getPlans);
+
 router.post(
   "/stripe/checkout-session",
   checkAuthMiddleware("USER"),
