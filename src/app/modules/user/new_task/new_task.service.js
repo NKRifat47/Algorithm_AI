@@ -107,6 +107,11 @@ export const detectResponseType = (rawContent) => {
   return { type: "text", filesCount: files.length };
 };
 
+export const getCodebaseFilesFromAiResponse = (rawContent) => {
+  const text = getAiOutputText(rawContent);
+  return extractCodeFilesFromText(text);
+};
+
 const handleNewTask = async (userId, payload) => {
   const { prompt, projectId, title } = payload;
 
@@ -362,6 +367,7 @@ export const NewTaskService = {
   getTaskById,
   continueTask,
   detectResponseType,
+  getCodebaseFilesFromAiResponse,
   generateTaskPdf: async (userId, taskId) => {
     const task = await prisma.task.findUnique({
       where: { id: taskId, userId },

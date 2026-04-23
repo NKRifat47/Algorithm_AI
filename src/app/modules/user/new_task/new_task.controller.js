@@ -52,6 +52,16 @@ const createNewTask = async (req, res) => {
       title,
     });
 
+    const responseType = NewTaskService.detectResponseType
+      ? NewTaskService.detectResponseType(result.content)?.type
+      : "text";
+
+    const codeFiles =
+      responseType === "codebase" &&
+      NewTaskService.getCodebaseFilesFromAiResponse
+        ? NewTaskService.getCodebaseFilesFromAiResponse(result.content)
+        : [];
+
     return res.status(httpStatus.CREATED).json({
       success: true,
       message: "Task created and AI responded successfully",
@@ -62,9 +72,7 @@ const createNewTask = async (req, res) => {
         aiResponse: removeAiEnginePdfPath(parseIfJsonString(result.content)),
         aiResponseRaw:
           typeof result.content === "string" ? result.content : null,
-        responseType: NewTaskService.detectResponseType
-          ? NewTaskService.detectResponseType(result.content)?.type
-          : "text",
+        responseType,
         pdf: {
           generated: false,
           generateUrl: `/api/user/new-task/${result.id}/pdf`,
@@ -73,6 +81,7 @@ const createNewTask = async (req, res) => {
         codebase: {
           // frontend can show this button only when responseType === "codebase"
           generated: false,
+          files: codeFiles,
           generateUrl: `/api/user/new-task/${result.id}/codebase`,
           downloadUrl: `/api/user/new-task/${result.id}/codebase/download`,
         },
