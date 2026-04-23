@@ -35,6 +35,17 @@ export const UserAuthService = {
       },
     });
 
+    await prisma.activityLog.create({
+      data: {
+        type: "USER_REGISTERED",
+        message: "New user registered",
+        userEmail: newUser.email,
+        meta: {
+          userId: newUser.id,
+        },
+      },
+    });
+
     return {
       id: newUser.id,
       email: newUser.email,

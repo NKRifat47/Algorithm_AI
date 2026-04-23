@@ -55,8 +55,38 @@ const getSalesTrack = async (req, res) => {
   }
 };
 
+const getSystemActivity = async (req, res) => {
+  try {
+    const { limit } = req.query;
+    const data = await AdminDashboardService.getSystemActivity(prisma, {
+      limit,
+    });
+
+    return res.json({
+      success: true,
+      message: "System activity retrieved successfully",
+      data,
+    });
+  } catch (error) {
+    console.error("getSystemActivity error:", error);
+
+    if (error instanceof DevBuildError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(500).json({
+      success: false,
+      message: "Failed to retrieve system activity",
+    });
+  }
+};
+
 export const AdminDashboardController = {
   getDashboardStats,
   getSalesTrack,
+  getSystemActivity,
 };
 

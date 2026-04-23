@@ -82,6 +82,11 @@ export const UserPaymentService = {
         const plan = await prisma.plan.findUnique({ where: { id: planId } });
         if (!plan) throw new AppError(404, "Plan not found");
 
+        const user = await prisma.user.findUnique({
+          where: { id: userId },
+          select: { email: true },
+        });
+
         // Minimal dedupe: if user already has an active subscription, do nothing.
         const existingActive = await prisma.subscription.findFirst({
           where: {
@@ -125,6 +130,21 @@ export const UserPaymentService = {
         await prisma.user.update({
           where: { id: userId },
           data: { planId },
+        });
+
+        await prisma.activityLog.create({
+          data: {
+            type: "PLAN_PURCHASED",
+            message: `Plan purchased (${plan.name})`,
+            userEmail: user?.email || "Unknown User",
+            meta: {
+              userId,
+              planId,
+              planName: plan.name,
+              interval,
+              price,
+            },
+          },
         });
 
         return { handled: true };

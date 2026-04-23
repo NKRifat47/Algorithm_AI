@@ -16,5 +16,11 @@ router.get(
   AdminDashboardController.getSalesTrack,
 );
 
+router.get(
+  "/activity",
+  checkAuthMiddleware("ADMIN"),
+  AdminDashboardController.getSystemActivity,
+);
+
 export const AdminDashboardRouter = router;
 

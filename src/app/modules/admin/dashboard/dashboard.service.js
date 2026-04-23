@@ -163,5 +163,29 @@ export const AdminDashboardService = {
       series,
     };
   },
+
+  getSystemActivity: async (prisma, { limit = 20 } = {}) => {
+    const safeLimit = Number.isFinite(Number(limit))
+      ? Math.min(Math.max(Number(limit), 1), 100)
+      : 20;
+
+    const logs = await prisma.activityLog.findMany({
+      where: {
+        type: { in: ["USER_REGISTERED", "PLAN_PURCHASED"] },
+      },
+      orderBy: { createdAt: "desc" },
+      take: safeLimit,
+      select: {
+        id: true,
+        type: true,
+        message: true,
+        userEmail: true,
+        meta: true,
+        createdAt: true,
+      },
+    });
+
+    return logs;
+  },
 };
 
