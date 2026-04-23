@@ -8,6 +8,7 @@ import {
   CREDIT_COSTS,
 } from "../../../utils/credits.js";
 
+// ---------- Local Helpers ----------
 const parseIfJsonString = (value) => {
   if (typeof value !== "string") return value;
   const trimmed = value.trim();
@@ -33,6 +34,7 @@ const removeAiEnginePdfPath = (value) => {
   return cloned;
 };
 
+// ---------- Route Handlers ----------
 const createNewTask = async (req, res) => {
   const userId = req.user.id;
   let charged = false;
@@ -234,6 +236,7 @@ const continueTask = async (req, res) => {
   }
 };
 
+// ---------- Controller Export ----------
 export const NewTaskController = {
   createNewTask,
   getNewTaskData,

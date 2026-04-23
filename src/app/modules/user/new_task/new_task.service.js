@@ -6,6 +6,7 @@ import path from "path";
 import PDFDocument from "pdfkit";
 import archiver from "archiver";
 
+// ---------- AI Output Helpers ----------
 const getAiOutputText = (rawContent) => {
   if (typeof rawContent !== "string") return "";
   const trimmed = rawContent.trim();
@@ -23,6 +24,7 @@ const getAiOutputText = (rawContent) => {
   }
 };
 
+// ---------- Codebase Parsing Helpers ----------
 const extractCodeFilesFromText = (text) => {
   if (!text || typeof text !== "string") return [];
 
@@ -112,6 +114,7 @@ export const getCodebaseFilesFromAiResponse = (rawContent) => {
   return extractCodeFilesFromText(text);
 };
 
+// ---------- Core Task Flows ----------
 const handleNewTask = async (userId, payload) => {
   const { prompt, projectId, title } = payload;
 
