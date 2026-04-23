@@ -169,23 +169,60 @@ export const AdminDashboardService = {
       ? Math.min(Math.max(Number(limit), 1), 100)
       : 20;
 
-    const logs = await prisma.activityLog.findMany({
-      where: {
-        type: { in: ["USER_REGISTERED", "PLAN_PURCHASED"] },
-      },
-      orderBy: { createdAt: "desc" },
-      take: safeLimit,
-      select: {
-        id: true,
-        type: true,
-        message: true,
-        userEmail: true,
-        meta: true,
-        createdAt: true,
-      },
-    });
+    const now = new Date();
+    const inThreeDays = new Date(now);
+    inThreeDays.setDate(inThreeDays.getDate() + 3);
 
-    return logs;
+    const [logs, expiringSubs] = await Promise.all([
+      prisma.activityLog.findMany({
+        where: {
+          type: { in: ["USER_REGISTERED", "PLAN_PURCHASED"] },
+        },
+        orderBy: { createdAt: "desc" },
+        take: safeLimit,
+        select: {
+          id: true,
+          type: true,
+          message: true,
+          userEmail: true,
+          meta: true,
+          createdAt: true,
+        },
+      }),
+      prisma.subscription.findMany({
+        where: {
+          status: "ACTIVE",
+          endDate: { gte: now, lte: inThreeDays },
+        },
+        orderBy: { endDate: "asc" },
+        take: safeLimit,
+        select: {
+          id: true,
+          user: { select: { email: true } },
+          plan: { select: { id: true, name: true } },
+          endDate: true,
+        },
+      }),
+    ]);
+
+    const expiringActivities = expiringSubs.map((s) => ({
+      id: `expiring:${s.id}`,
+      type: "SUBSCRIPTION_EXPIRING",
+      message: `Subscription expiring soon (${s.plan?.name || "Unknown Plan"})`,
+      userEmail: s.user?.email || "Unknown User",
+      meta: {
+        subscriptionId: s.id,
+        planId: s.plan?.id,
+        planName: s.plan?.name,
+        endDate: s.endDate,
+        daysLeft: Math.ceil((new Date(s.endDate).getTime() - now.getTime()) / 86400000),
+      },
+      createdAt: s.endDate,
+    }));
+
+    return [...logs, ...expiringActivities]
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+      .slice(0, safeLimit);
   },
 };
 
