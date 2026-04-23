@@ -4,6 +4,7 @@ import DevBuildError from "../../../lib/DevBuildError.js";
 import { generateTokens } from "../../../utils/generateToken.js";
 import { envVars } from "../../../config/env.js";
 import { redisClient } from "../../../config/redis.config.js";
+import { AdminNotificationService } from "../../admin/notification/notification.service.js";
 
 const FREE_CREDITS_ON_SIGNUP = 300;
 
@@ -44,6 +45,12 @@ export const UserAuthService = {
           userId: newUser.id,
         },
       },
+    });
+
+    await AdminNotificationService.notifyAdmins(prisma, {
+      type: "USER_REGISTERED",
+      message: `${newUser.email} user registered in your system`,
+      meta: { userId: newUser.id },
     });
 
     return {

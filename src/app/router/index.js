@@ -6,6 +6,7 @@ import { AdminUsageBillingRouter } from "../modules/admin/usage_billing/usage_bi
 import { AdminApiConfigRouter } from "../modules/admin/api_configuration/api_config.route.js";
 import { AdminProfileRouter } from "../modules/admin/profile/profile.route.js";
 import { AdminDashboardRouter } from "../modules/admin/dashboard/dashboard.route.js";
+import { AdminNotificationRouter } from "../modules/admin/notification/notification.route.js";
 import { UserAuthRouter } from "../modules/user/auth/auth.route.js";
 import { UserProfileRouter } from "../modules/user/profile/profile.route.js";
 import { NewTaskRouter } from "../modules/user/new_task/new_task.route.js";
@@ -45,6 +46,10 @@ const moduleRoutes = [
   {
     path: "/admin/dashboard",
     route: AdminDashboardRouter,
+  },
+  {
+    path: "/admin/notification",
+    route: AdminNotificationRouter,
   },
 
   // User Route Start From Here

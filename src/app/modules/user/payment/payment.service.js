@@ -1,5 +1,6 @@
 import { stripe } from "./stripe.client.js";
 import { AppError } from "../../../errorHelper/appError.js";
+import { AdminNotificationService } from "../../admin/notification/notification.service.js";
 
 const addMonths = (date, months) => {
   const d = new Date(date);
@@ -145,6 +146,12 @@ export const UserPaymentService = {
               price,
             },
           },
+        });
+
+        await AdminNotificationService.notifyAdmins(prisma, {
+          type: "PLAN_PURCHASED",
+          message: `${user?.email || "Unknown User"} purchased ${plan.name} plan`,
+          meta: { userId, planId, planName: plan.name, interval, price },
         });
 
         return { handled: true };

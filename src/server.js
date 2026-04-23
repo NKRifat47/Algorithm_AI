@@ -3,6 +3,8 @@ import { envVars } from "./app/config/env.js";
 import { connectRedis, disconnectRedis } from "./app/config/redis.config.js";
 import prisma from "./app/prisma/client.js";
 import { startDailyCreditsRefreshCron } from "./app/jobs/dailyCreditsRefresh.js";
+import http from "http";
+import { initSocket } from "./app/socket/socket.js";
 
 let server;
 let creditsCron;
@@ -24,7 +26,10 @@ const startServer = async () => {
     });
 
     // Start server
-    server = app.listen(PORT, () => {
+    const httpServer = http.createServer(app);
+    initSocket(httpServer);
+
+    server = httpServer.listen(PORT, () => {
       console.log(`Server running at http://localhost:${PORT}`);
     });
   } catch (error) {
@@ -37,7 +42,7 @@ const startServer = async () => {
 startServer();
 
 /**
- * 🔴 Unhandled Promise Rejection
+ *  Unhandled Promise Rejection
  */
 process.on("unhandledRejection", async (err) => {
   console.error("Unhandled Rejection Detected... server shutting down...", err);
