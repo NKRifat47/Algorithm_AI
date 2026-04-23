@@ -134,9 +134,17 @@ const handleNewTask = async (userId, payload) => {
     // 2. Call teammate's AI Engine
     const aiEngineUrl = envVars.AI_ENGINE_URL || "http://localhost:8000";
 
-    const response = await axios.post(`${aiEngineUrl}/api/generate`, {
-      prompt,
-    });
+    const response = await axios.post(
+      `${aiEngineUrl}/api/generate`,
+      {
+        intent: "new_task",
+        prompt,
+      },
+      {
+        params: { intent: "new_task" },
+        headers: { "Content-Type": "application/json" },
+      },
+    );
 
     const aiContent = response.data;
 
@@ -294,9 +302,17 @@ const continueTask = async (userId, taskId, newPrompt) => {
   try {
     const aiEngineUrl = envVars.AI_ENGINE_URL || "http://localhost:8000";
 
-    const response = await axios.post(`${aiEngineUrl}/api/generate`, {
-      prompt: combinedPrompt,
-    });
+    const response = await axios.post(
+      `${aiEngineUrl}/api/generate`,
+      {
+        intent: "continue_task",
+        prompt: combinedPrompt,
+      },
+      {
+        params: { intent: "continue_task" },
+        headers: { "Content-Type": "application/json" },
+      },
+    );
 
     const aiContent = response.data;
 
