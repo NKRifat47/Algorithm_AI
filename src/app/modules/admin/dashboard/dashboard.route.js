@@ -10,5 +10,11 @@ router.get(
   AdminDashboardController.getDashboardStats,
 );
 
+router.get(
+  "/sales-track",
+  checkAuthMiddleware("ADMIN"),
+  AdminDashboardController.getSalesTrack,
+);
+
 export const AdminDashboardRouter = router;
 
