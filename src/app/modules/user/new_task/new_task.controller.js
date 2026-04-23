@@ -197,14 +197,32 @@ const continueTask = async (req, res) => {
     charged = true;
 
     const result = await NewTaskService.continueTask(userId, id, prompt);
+    const responseType = NewTaskService.detectResponseType
+      ? NewTaskService.detectResponseType(result.content)?.type
+      : "text";
+
+    const codeFiles =
+      responseType === "codebase" &&
+      NewTaskService.getCodebaseFilesFromAiResponse
+        ? NewTaskService.getCodebaseFilesFromAiResponse(result.content)
+        : [];
 
     return res.status(httpStatus.OK).json({
       success: true,
       message: "AI response received and conversation updated",
       data: {
         ...result,
+        // For continue, reflect the latest user prompt in the response payload.
+        prompt,
         content: parseIfJsonString(result.content),
         contentRaw: typeof result.content === "string" ? result.content : null,
+        responseType,
+        codebase: {
+          generated: false,
+          files: codeFiles,
+          generateUrl: `/api/user/new-task/${result.id}/codebase`,
+          downloadUrl: `/api/user/new-task/${result.id}/codebase/download`,
+        },
       },
     });
   } catch (error) {
