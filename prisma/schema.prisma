@@ -35,8 +35,8 @@ enum TaskStatus {
 // USER
 
 model User {
-  id       String @id @default(uuid())
-  email    String @unique
+  id       String  @id @default(uuid())
+  email    String  @unique
   password String?
 
   firstName String
@@ -52,7 +52,7 @@ model User {
   oauthProvider   String?
   oauthProviderId String?
 
-  credits Int @default(300)
+  credits              Int       @default(300)
   lastCreditsRefreshAt DateTime?
 
   planId String?
@@ -65,7 +65,6 @@ model User {
   files         File[]
   notifications Notification[]
   favorites     UserFavorite[]
-  apiUsage      ApiUsage[]
 
   notificationSetting NotificationSetting?
 
@@ -76,17 +75,17 @@ model User {
 // PLAN & BILLING
 
 model Plan {
-  id    String @id @default(uuid())
-  name  String
-  monthlyPrice Float
-  yearlyPrice Float
+  id                   String  @id @default(uuid())
+  name                 String
+  monthlyPrice         Float
+  yearlyPrice          Float
   stripeMonthlyPriceId String?
   stripeYearlyPriceId  String?
 
   requestLimit Int
   agentLimit   Int
 
-  features             String[] @default([])
+  features String[] @default([])
 
   users         User[]
   subscriptions Subscription[]
@@ -156,8 +155,8 @@ model Task {
   user    User     @relation(fields: [userId], references: [id])
   project Project? @relation(fields: [projectId], references: [id])
 
-  title  String
-  prompt String
+  title   String
+  prompt  String
   content String?
 
   status TaskStatus @default(PENDING)
@@ -360,18 +359,6 @@ model NotificationSetting {
 
 // ADMIN SYSTEM
 
-model ApiUsage {
-  id String @id @default(uuid())
-
-  userId String
-  user   User   @relation(fields: [userId], references: [id])
-
-  tokensUsed   Int
-  requestCount Int
-
-  date DateTime
-}
-
 model ActivityLog {
   id String @id @default(uuid())
 
@@ -392,17 +379,6 @@ model SystemMetric {
   revenue    Float
 
   recordedAt DateTime
-}
-
-model ApiConfig {
-  id String @id @default(uuid())
-
-  openaiKey    String
-  anthropicKey String
-  baseUrl      String
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 }
 
 model ApiKey {
