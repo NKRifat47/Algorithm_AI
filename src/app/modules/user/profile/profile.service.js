@@ -13,6 +13,7 @@ export const UserProfileService = {
         credits: true,
         plan: {
           select: {
+            id: true,
             name: true,
           },
         },
@@ -28,7 +29,7 @@ export const UserProfileService = {
       email: user.email,
       avatarUrl: user.avatar,
       credits: user.credits,
-      plan: user.plan?.name || "N/A",
+      plan: user.plan ? { id: user.plan.id, name: user.plan.name } : "free",
     };
   },
 
@@ -51,6 +52,7 @@ export const UserProfileService = {
         credits: true,
         plan: {
           select: {
+            id: true,
             name: true,
           },
         },
@@ -62,7 +64,9 @@ export const UserProfileService = {
       email: updatedUser.email,
       avatarUrl: updatedUser.avatar,
       credits: updatedUser.credits,
-      plan: updatedUser.plan?.name || "Free",
+      plan: updatedUser.plan
+        ? { id: updatedUser.plan.id, name: updatedUser.plan.name }
+        : "free",
     };
   },
 };

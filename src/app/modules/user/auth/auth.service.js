@@ -10,7 +10,7 @@ const FREE_CREDITS_ON_SIGNUP = 300;
 
 export const UserAuthService = {
   register: async (prisma, userData) => {
-    const { firstName, lastName, email, password } = userData;
+    const { firstName, lastName, email, password, planId } = userData;
 
     // Check if user already exists
     const existingUser = await prisma.user.findUnique({
@@ -33,6 +33,7 @@ export const UserAuthService = {
         password: hashedPassword,
         isVerified: false,
         credits: FREE_CREDITS_ON_SIGNUP,
+        planId: planId || null,
       },
     });
 
@@ -58,12 +59,14 @@ export const UserAuthService = {
       email: newUser.email,
       firstName: newUser.firstName,
       lastName: newUser.lastName,
+      plan: newUser.planId || "free",
     };
   },
 
   login: async (prisma, email, password) => {
     const user = await prisma.user.findUnique({
       where: { email },
+      include: { plan: true },
     });
 
     if (!user) {
@@ -103,6 +106,9 @@ export const UserAuthService = {
         lastName: user.lastName,
         role: user.role,
         credits: user.credits,
+        plan: user.plan
+          ? { id: user.plan.id, name: user.plan.name }
+          : "free",
       },
       tokens,
     };
@@ -122,6 +128,7 @@ export const UserAuthService = {
 
     const user = await prisma.user.findUnique({
       where: { id: payload.id },
+      include: { plan: true },
     });
 
     if (!user || user.role !== "USER") {
@@ -138,6 +145,9 @@ export const UserAuthService = {
         lastName: user.lastName,
         role: user.role,
         credits: user.credits,
+        plan: user.plan
+          ? { id: user.plan.id, name: user.plan.name }
+          : "free",
       },
       tokens,
     };
