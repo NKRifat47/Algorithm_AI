@@ -64,6 +64,33 @@ const getProjectById = async (req, res) => {
   }
 };
 
+const getAllProjects = async (req, res) => {
+  try {
+    const userId = req.user.id;
+    const result = await ProjectService.getAllProjects(userId);
+
+    return res.status(httpStatus.OK).json({
+      success: true,
+      message: "Projects fetched successfully",
+      data: result,
+    });
+  } catch (error) {
+    console.error("getAllProjects error:", error);
+
+    if (error instanceof DevBuildError) {
+      return res.status(error.statusCode).json({
+        success: false,
+        message: error.message,
+      });
+    }
+
+    return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+      success: false,
+      message: error.message || "Failed to fetch projects",
+    });
+  }
+};
+
 const createTask = async (req, res) => {
   try {
     const userId = req.user.id;
@@ -100,6 +127,7 @@ const createTask = async (req, res) => {
 
 export const ProjectController = {
   createProject,
+  getAllProjects,
   getProjectById,
   createTask,
 };

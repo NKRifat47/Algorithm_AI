@@ -35,7 +35,34 @@ const getProjectById = async (userId, projectId) => {
   return project;
 };
 
+const getAllProjects = async (userId) => {
+  const projects = await prisma.project.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    select: {
+      id: true,
+      name: true,
+      description: true,
+      createdAt: true,
+      _count: {
+        select: {
+          tasks: true,
+        },
+      },
+    },
+  });
+
+  return projects.map((p) => ({
+    id: p.id,
+    name: p.name,
+    description: p.description,
+    createdAt: p.createdAt,
+    taskCount: p._count.tasks,
+  }));
+};
+
 export const ProjectService = {
   createProject,
+  getAllProjects,
   getProjectById,
 };

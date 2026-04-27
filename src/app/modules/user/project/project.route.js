@@ -6,6 +6,8 @@ import { checkAuthMiddleware } from "../../../middleware/checkAuthMiddleware.js"
 
 const router = Router();
 
+router.get("/", checkAuthMiddleware("USER"), ProjectController.getAllProjects);
+
 router.post(
   "/create",
   checkAuthMiddleware("USER"),
