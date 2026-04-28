@@ -3,6 +3,7 @@ import prisma from "../../../prisma/client.js";
 import { envVars } from "../../../config/env.js";
 import fs from "fs";
 import path from "path";
+import { randomUUID } from "crypto";
 import PDFDocument from "pdfkit";
 import archiver from "archiver";
 
@@ -114,9 +115,38 @@ export const getCodebaseFilesFromAiResponse = (rawContent) => {
   return extractCodeFilesFromText(text);
 };
 
+const TASK_STEP_NAMES = {
+  AI_SESSION: "AI_SESSION",
+};
+
+const saveTaskSessionId = async (taskId, sessionId) => {
+  await prisma.taskStep.create({
+    data: {
+      taskId,
+      stepName: TASK_STEP_NAMES.AI_SESSION,
+      status: "COMPLETED",
+      output: sessionId,
+    },
+  });
+};
+
+const getTaskSessionId = async (taskId) => {
+  const sessionStep = await prisma.taskStep.findFirst({
+    where: {
+      taskId,
+      stepName: TASK_STEP_NAMES.AI_SESSION,
+      status: "COMPLETED",
+    },
+    orderBy: { createdAt: "desc" },
+  });
+
+  return sessionStep?.output || null;
+};
+
 // ---------- Core Task Flows ----------
 const handleNewTask = async (userId, payload) => {
   const { prompt, projectId, title } = payload;
+  const sessionId = randomUUID();
 
   // 1. Create the Task in DB
   const task = await prisma.task.create({
@@ -138,6 +168,8 @@ const handleNewTask = async (userId, payload) => {
     },
   });
 
+  await saveTaskSessionId(task.id, sessionId);
+
   try {
     // 2. Call teammate's AI Engine
     const aiEngineUrl = envVars.AI_ENGINE_URL || "http://localhost:8000";
@@ -145,11 +177,9 @@ const handleNewTask = async (userId, payload) => {
     const response = await axios.post(
       `${aiEngineUrl}/api/generate`,
       {
-        intent: "new_task",
         prompt,
       },
       {
-        params: { intent: "new_task" },
         headers: { "Content-Type": "application/json" },
       },
     );
@@ -165,6 +195,8 @@ const handleNewTask = async (userId, payload) => {
         status: "COMPLETED",
       },
     });
+
+    updatedTask.session_id = sessionId;
 
     // 4. Create the final AI message (chat history)
     await prisma.message.create({
@@ -265,14 +297,14 @@ const getTaskById = async (userId, taskId) => {
   return task;
 };
 
-const continueTask = async (userId, taskId, newPrompt) => {
+const continueTask = async (userId, taskId, newPrompt, providedSessionId) => {
   // 1. Validating the task exists and belongs to the user
   const existingTask = await prisma.task.findUnique({
     where: { id: taskId, userId },
     include: {
       messages: {
         orderBy: { createdAt: "desc" },
-        take: 3,
+        take: 12,
       },
     },
   });
@@ -281,16 +313,24 @@ const continueTask = async (userId, taskId, newPrompt) => {
     throw new Error("Task not found or unauthorized");
   }
 
-  // 2. Formatting the context for the AI Engine
-  // Note: Existing messages are fetched in desc order, so we reverse it
-  const contextHistory = existingTask.messages
+  const sessionId = await getTaskSessionId(taskId);
+  if (!sessionId) {
+    throw new Error("Session ID not found for this task");
+  }
+  if (providedSessionId && providedSessionId !== sessionId) {
+    throw new Error("Invalid session_id for this task");
+  }
+
+  const contextHistory = (existingTask.messages || [])
     .reverse()
     .map(
       (msg) => `${msg.role === "user" ? "User" : "Assistant"}: ${msg.content}`,
     )
     .join("\n");
 
-  const combinedPrompt = `${contextHistory}\nUser: ${newPrompt}`;
+  const combinedPrompt = contextHistory
+    ? `${contextHistory}\nUser: ${newPrompt}`
+    : newPrompt;
 
   // 3. Updating task status to RUNNING
   await prisma.task.update({
@@ -311,13 +351,12 @@ const continueTask = async (userId, taskId, newPrompt) => {
     const aiEngineUrl = envVars.AI_ENGINE_URL || "http://localhost:8000";
 
     const response = await axios.post(
-      `${aiEngineUrl}/api/generate`,
+      `${aiEngineUrl}/api/chat`,
       {
-        intent: "continue_task",
         prompt: combinedPrompt,
+        session_id: sessionId,
       },
       {
-        params: { intent: "continue_task" },
         headers: { "Content-Type": "application/json" },
       },
     );
@@ -333,6 +372,8 @@ const continueTask = async (userId, taskId, newPrompt) => {
         status: "COMPLETED",
       },
     });
+
+    updatedTask.session_id = sessionId;
 
     // 6. Save AI's response message
     await prisma.message.create({

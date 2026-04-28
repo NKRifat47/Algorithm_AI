@@ -13,6 +13,7 @@ router.get("/:id", checkAuthMiddleware("USER"), NewTaskController.getTaskById);
 router.post(
   "/:id/continue",
   checkAuthMiddleware("USER"),
+  validateRequest(NewTaskValidation.continueTaskSchema),
   NewTaskController.continueTask,
 );
 

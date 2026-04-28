@@ -71,6 +71,7 @@ const createNewTask = async (req, res) => {
         taskId: result.id,
         status: result.status,
         prompt: result.prompt,
+        session_id: result.session_id,
         aiResponse: removeAiEnginePdfPath(parseIfJsonString(result.content)),
         aiResponseRaw:
           typeof result.content === "string" ? result.content : null,
@@ -180,7 +181,7 @@ const continueTask = async (req, res) => {
   let charged = false;
   try {
     const { id } = req.params;
-    const { prompt } = req.body;
+    const { prompt, session_id: sessionId } = req.body;
 
     if (!prompt) {
       return res.status(httpStatus.BAD_REQUEST).json({
@@ -196,7 +197,12 @@ const continueTask = async (req, res) => {
     });
     charged = true;
 
-    const result = await NewTaskService.continueTask(userId, id, prompt);
+    const result = await NewTaskService.continueTask(
+      userId,
+      id,
+      prompt,
+      sessionId,
+    );
     const responseType = NewTaskService.detectResponseType
       ? NewTaskService.detectResponseType(result.content)?.type
       : "text";
@@ -214,6 +220,7 @@ const continueTask = async (req, res) => {
         ...result,
         // For continue, reflect the latest user prompt in the response payload.
         prompt,
+        session_id: result.session_id,
         content: parseIfJsonString(result.content),
         contentRaw: typeof result.content === "string" ? result.content : null,
         responseType,

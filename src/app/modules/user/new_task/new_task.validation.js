@@ -10,6 +10,18 @@ const createTaskSchema = z.object({
   }),
 });
 
+const continueTaskSchema = z.object({
+  body: z.object({
+    prompt: z.string({
+      required_error: "Prompt is required",
+    }),
+    session_id: z.string({
+      required_error: "session_id is required",
+    }),
+  }),
+});
+
 export const NewTaskValidation = {
   createTaskSchema,
+  continueTaskSchema,
 };
