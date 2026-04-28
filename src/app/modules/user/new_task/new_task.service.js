@@ -294,7 +294,11 @@ const getTaskById = async (userId, taskId) => {
     throw new Error("Task not found");
   }
 
-  return task;
+  const sessionId = await getTaskSessionId(taskId);
+  return {
+    ...task,
+    session_id: sessionId,
+  };
 };
 
 const continueTask = async (userId, taskId, newPrompt, providedSessionId) => {
