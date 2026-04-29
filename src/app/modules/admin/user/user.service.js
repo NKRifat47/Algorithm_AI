@@ -47,19 +47,18 @@ export const AdminUserService = {
     }
 
     await prisma.$transaction(async (tx) => {
-      // 1. Delete user favorites
-      await tx.userFavorite.deleteMany({ where: { userId } });
+      // 1. Delete activity logs (linked by email)
+      await tx.activityLog.deleteMany({ where: { userEmail: user.email } });
 
+      // 2. Delete user relations
+      await tx.userFavorite.deleteMany({ where: { userId } });
       await tx.subscription.deleteMany({ where: { userId } });
       await tx.payment.deleteMany({ where: { userId } });
-
       await tx.notification.deleteMany({ where: { userId } });
       await tx.notificationSetting.deleteMany({ where: { userId } });
-
-      await tx.apiUsage.deleteMany({ where: { userId } });
-
       await tx.file.deleteMany({ where: { userId } });
 
+      // 3. Delete tasks and their relations
       const tasks = await tx.task.findMany({
         where: { userId },
         select: { id: true },
@@ -69,6 +68,7 @@ export const AdminUserService = {
       await tx.message.deleteMany({ where: { taskId: { in: taskIds } } });
       await tx.task.deleteMany({ where: { userId } });
 
+      // 4. Delete projects and their complex relations (websites, etc.)
       const projects = await tx.project.findMany({
         where: { userId },
         select: { id: true },
@@ -81,6 +81,7 @@ export const AdminUserService = {
       });
       const websiteIds = websites.map((w) => w.id);
 
+      // Clean up website data
       await tx.websiteFile.deleteMany({
         where: { websiteId: { in: websiteIds } },
       });
@@ -95,13 +96,14 @@ export const AdminUserService = {
       });
       await tx.website.deleteMany({ where: { projectId: { in: projectIds } } });
 
+      // Clean up project data
       await tx.secret.deleteMany({ where: { projectId: { in: projectIds } } });
       await tx.integration.deleteMany({
         where: { projectId: { in: projectIds } },
       });
       await tx.project.deleteMany({ where: { userId } });
 
-      // Finally delete the user
+      // 5. Finally delete the user
       await tx.user.delete({
         where: { id: userId },
       });
