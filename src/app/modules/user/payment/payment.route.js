@@ -6,7 +6,13 @@ import { UserPaymentValidation } from "./payment.validation.js";
 
 const router = Router();
 
-router.get("/plans", checkAuthMiddleware("USER"), UserPaymentController.getPlans);
+router.get(
+  "/plans",
+  checkAuthMiddleware("USER"),
+  UserPaymentController.getPlans,
+);
+
+router.get("/get-plans", UserPaymentController.getPlans);
 
 router.post(
   "/stripe/checkout-session",
