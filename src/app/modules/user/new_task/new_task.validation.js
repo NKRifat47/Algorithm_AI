@@ -7,6 +7,8 @@ const createTaskSchema = z.object({
     }),
     projectId: z.string().optional(),
     title: z.string().optional(),
+    /** Force AI route: `project` → /api/generate, `chat` → /api/chat. Omit to auto-detect from prompt. */
+    mode: z.enum(["project", "chat"]).optional(),
   }),
 });
 

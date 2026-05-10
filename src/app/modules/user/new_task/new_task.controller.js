@@ -39,7 +39,7 @@ const createNewTask = async (req, res) => {
   const userId = req.user.id;
   let charged = false;
   try {
-    const { prompt, projectId, title } = req.body;
+    const { prompt, projectId, title, mode } = req.body;
 
     await chargeCredits(prisma, userId, {
       amount: CREDIT_COSTS.AI_QUERY,
@@ -52,6 +52,7 @@ const createNewTask = async (req, res) => {
       prompt,
       projectId,
       title,
+      mode,
     });
 
     const responseType = NewTaskService.detectResponseType
@@ -72,6 +73,7 @@ const createNewTask = async (req, res) => {
         status: result.status,
         prompt: result.prompt,
         session_id: result.session_id,
+        aiInitialRoute: result.aiInitialRoute,
         aiResponse: removeAiEnginePdfPath(parseIfJsonString(result.content)),
         aiResponseRaw:
           typeof result.content === "string" ? result.content : null,

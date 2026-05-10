@@ -119,6 +119,40 @@ const TASK_STEP_NAMES = {
   AI_SESSION: "AI_SESSION",
 };
 
+/** Heuristics: portfolio / websites / “build an app” → project (`/api/generate`). Otherwise → `/api/chat`. */
+const PROJECT_INTENT_PATTERNS = [
+  /\bportfolio\b/i,
+  /\bwebsite\b/i,
+  /\bweb[\s-]?site\b/i,
+  /\bweb\s*app\b/i,
+  /\blanding\s+page\b/i,
+  /\bhomepage\b/i,
+  /\be-?commerce\b/i,
+  /\bonline\s+store\b/i,
+  /\b(build|create|design|make|develop)\b[\s\S]{0,120}\b(website|web\s*app|web\s*site|application|portfolio|dashboard|store|blog|landing\s+page|homepage|saas)\b/i,
+  /\b(next\.?js|nuxt|sveltekit|astro|react\s+project|vue\s+project|angular\s+app|full[\s-]?stack\s+(site|app))\b/i,
+];
+
+const inferInitialAiRouteFromPrompt = (prompt) => {
+  const text = String(prompt ?? "").trim();
+  if (!text) return "chat";
+  for (const re of PROJECT_INTENT_PATTERNS) {
+    if (re.test(text)) return "generate";
+  }
+  return "chat";
+};
+
+/**
+ * @param {string} prompt
+ * @param {"project"|"chat"|undefined} mode from client; overrides inference when set
+ * @returns {"generate"|"chat"}
+ */
+export const resolveNewTaskAiRoute = (prompt, mode) => {
+  if (mode === "project") return "generate";
+  if (mode === "chat") return "chat";
+  return inferInitialAiRouteFromPrompt(prompt);
+};
+
 const saveTaskSessionId = async (taskId, sessionId) => {
   await prisma.taskStep.create({
     data: {
@@ -145,8 +179,9 @@ const getTaskSessionId = async (taskId) => {
 
 // ---------- Core Task Flows ----------
 const handleNewTask = async (userId, payload) => {
-  const { prompt, projectId, title } = payload;
+  const { prompt, projectId, title, mode } = payload;
   const sessionId = randomUUID();
+  const initialAiRoute = resolveNewTaskAiRoute(prompt, mode);
 
   // 1. Create the Task in DB
   const task = await prisma.task.create({
@@ -171,14 +206,17 @@ const handleNewTask = async (userId, payload) => {
   await saveTaskSessionId(task.id, sessionId);
 
   try {
-    // 2. Call teammate's AI Engine
     const aiEngineUrl = envVars.AI_ENGINE_URL || "http://localhost:8000";
+    const aiPath =
+      initialAiRoute === "generate" ? "/api/generate" : "/api/chat";
+    const aiRequestBody =
+      initialAiRoute === "generate"
+        ? { prompt }
+        : { prompt, session_id: sessionId };
 
     const response = await axios.post(
-      `${aiEngineUrl}/api/generate`,
-      {
-        prompt,
-      },
+      `${aiEngineUrl}${aiPath}`,
+      aiRequestBody,
       {
         headers: { "Content-Type": "application/json" },
       },
@@ -197,6 +235,7 @@ const handleNewTask = async (userId, payload) => {
     });
 
     updatedTask.session_id = sessionId;
+    updatedTask.aiInitialRoute = initialAiRoute;
 
     // 4. Create the final AI message (chat history)
     await prisma.message.create({
@@ -414,6 +453,7 @@ export const NewTaskService = {
   getNewTaskData,
   getTaskById,
   continueTask,
+  resolveNewTaskAiRoute,
   detectResponseType,
   getCodebaseFilesFromAiResponse,
   generateTaskPdf: async (userId, taskId) => {
