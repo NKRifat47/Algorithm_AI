@@ -193,8 +193,9 @@ const PROJECT_INTENT_PATTERNS = [
   /\bhomepage\b/i,
   /\be-?commerce\b/i,
   /\bonline\s+store\b/i,
-  /\b(build|create|design|make|develop)\b[\s\S]{0,120}\b(website|web\s*app|web\s*site|application|portfolio|dashboard|store|blog|landing\s+page|homepage|saas)\b/i,
+  /\b(build|create|design|make|develop)\b[\s\S]{0,120}\b(website|web\s*app|web\s*site|application|portfolio|dashboard|store|blog|landing\s+page|homepage|saas|codebase|project)\b/i,
   /\b(next\.?js|nuxt|sveltekit|astro|react\s+project|vue\s+project|angular\s+app|full[\s-]?stack\s+(site|app))\b/i,
+  /\b(codebase|repository|repo|boilerplate|source\s*code)\b/i,
 ];
 
 const inferInitialAiRouteFromPrompt = (prompt) => {
@@ -273,6 +274,8 @@ const handleNewTask = async (userId, payload) => {
     const aiEngineUrl = envVars.AI_ENGINE_URL || "http://localhost:8000";
     const aiPath =
       initialAiRoute === "generate" ? "/api/generate" : "/api/chat";
+
+    console.log(`[AI ROUTING:CREATE] Mode: ${mode || "auto"} | Route: ${initialAiRoute} | Endpoint: ${aiPath}`);
     const aiRequestBody =
       initialAiRoute === "generate"
         ? { prompt }
@@ -456,13 +459,18 @@ const continueTask = async (userId, taskId, newPrompt, providedSessionId) => {
 
   try {
     const aiEngineUrl = envVars.AI_ENGINE_URL || "http://localhost:8000";
+    const aiRoute = resolveNewTaskAiRoute(newPrompt);
+    const aiPath = aiRoute === "generate" ? "/api/generate" : "/api/chat";
+
+    console.log(`[AI ROUTING:CONTINUE] Task: ${taskId} | Route: ${aiRoute} | Endpoint: ${aiPath}`);
+    const aiRequestBody =
+      aiRoute === "generate"
+        ? { prompt: combinedPrompt }
+        : { prompt: combinedPrompt, session_id: sessionId };
 
     const response = await axios.post(
-      `${aiEngineUrl}/api/chat`,
-      {
-        prompt: combinedPrompt,
-        session_id: sessionId,
-      },
+      `${aiEngineUrl}${aiPath}`,
+      aiRequestBody,
       {
         headers: { "Content-Type": "application/json" },
       },

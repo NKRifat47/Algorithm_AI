@@ -76,9 +76,12 @@ const createNewTask = async (req, res) => {
         prompt: result.prompt,
         session_id: result.session_id,
         aiInitialRoute: result.aiInitialRoute,
-        aiResponse: formatAiResponseObject(
-          removeAiEnginePdfPath(parseIfJsonString(result.content)),
-        ),
+        aiResponse:
+          responseType === "text"
+            ? formatAiResponseObject(
+                removeAiEnginePdfPath(parseIfJsonString(result.content)),
+              )
+            : removeAiEnginePdfPath(parseIfJsonString(result.content)),
         aiResponseRaw:
 
           typeof result.content === "string" ? result.content : null,
@@ -234,7 +237,10 @@ const continueTask = async (req, res) => {
         // For continue, reflect the latest user prompt in the response payload.
         prompt,
         session_id: result.session_id,
-        content: formatAiResponseObject(parseIfJsonString(result.content)),
+        content:
+          responseType === "text"
+            ? formatAiResponseObject(parseIfJsonString(result.content))
+            : parseIfJsonString(result.content),
         contentRaw: typeof result.content === "string" ? result.content : null,
 
         responseType,
