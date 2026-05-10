@@ -7,6 +7,8 @@ import {
   refundCredits,
   CREDIT_COSTS,
 } from "../../../utils/credits.js";
+import { formatAiResponseObject } from "../../../utils/aiResponseFormatter.js";
+
 
 // ---------- Local Helpers ----------
 const parseIfJsonString = (value) => {
@@ -74,8 +76,11 @@ const createNewTask = async (req, res) => {
         prompt: result.prompt,
         session_id: result.session_id,
         aiInitialRoute: result.aiInitialRoute,
-        aiResponse: removeAiEnginePdfPath(parseIfJsonString(result.content)),
+        aiResponse: formatAiResponseObject(
+          removeAiEnginePdfPath(parseIfJsonString(result.content)),
+        ),
         aiResponseRaw:
+
           typeof result.content === "string" ? result.content : null,
         responseType,
         pdf: {
@@ -229,8 +234,9 @@ const continueTask = async (req, res) => {
         // For continue, reflect the latest user prompt in the response payload.
         prompt,
         session_id: result.session_id,
-        content: parseIfJsonString(result.content),
+        content: formatAiResponseObject(parseIfJsonString(result.content)),
         contentRaw: typeof result.content === "string" ? result.content : null,
+
         responseType,
         codebase: {
           generated: false,
