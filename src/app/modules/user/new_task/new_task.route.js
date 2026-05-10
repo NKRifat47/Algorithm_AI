@@ -42,6 +42,13 @@ router.get(
 );
 
 router.post(
+  "/:id/preview",
+  checkAuthMiddleware("USER"),
+  validateRequest(NewTaskValidation.previewProjectSchema),
+  NewTaskController.previewProject,
+);
+
+router.post(
   "/create",
   checkAuthMiddleware("USER"),
   validateRequest(NewTaskValidation.createTaskSchema),

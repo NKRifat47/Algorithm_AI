@@ -62,6 +62,8 @@ const loadEnvVars = () => {
 
     // AI Engine
     AI_ENGINE_URL: process.env.AI_ENGINE_URL,
+    /** When set (e.g. http://YOUR_VPS_IP), preview responses that use 127.0.0.1/localhost are rewritten so browsers can open them. */
+    AI_PREVIEW_PUBLIC_ORIGIN: process.env.AI_PREVIEW_PUBLIC_ORIGIN,
 
     // Stripe
     STRIPE_SECRET_KEY: process.env.STRIPE_SECRET_KEY,

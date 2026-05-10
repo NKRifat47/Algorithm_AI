@@ -90,6 +90,12 @@ const createNewTask = async (req, res) => {
           generateUrl: `/api/user/new-task/${result.id}/codebase`,
           downloadUrl: `/api/user/new-task/${result.id}/codebase/download`,
         },
+        preview: {
+          previewUrl: `/api/user/new-task/${result.id}/preview`,
+          projectPath:
+            NewTaskService.extractProjectPathFromAiContent(result.content) ??
+            null,
+        },
         createdAt: result.createdAt,
       },
     });
@@ -231,6 +237,12 @@ const continueTask = async (req, res) => {
           files: codeFiles,
           generateUrl: `/api/user/new-task/${result.id}/codebase`,
           downloadUrl: `/api/user/new-task/${result.id}/codebase/download`,
+        },
+        preview: {
+          previewUrl: `/api/user/new-task/${result.id}/preview`,
+          projectPath:
+            NewTaskService.extractProjectPathFromAiContent(result.content) ??
+            null,
         },
       },
     });
@@ -396,6 +408,39 @@ export const NewTaskController = {
       return res.status(httpStatus.NOT_FOUND).json({
         success: false,
         message: error.message || "ZIP not found",
+      });
+    }
+  },
+  previewProject: async (req, res) => {
+    try {
+      const userId = req.user.id;
+      const { id: taskId } = req.params;
+      const { project_path: projectPath } = req.body || {};
+
+      const data = await NewTaskService.previewProject(
+        userId,
+        taskId,
+        projectPath,
+      );
+
+      return res.status(httpStatus.OK).json({
+        success: true,
+        message: "Preview retrieved successfully",
+        data,
+      });
+    } catch (error) {
+      console.error("previewProject error:", error);
+
+      if (error instanceof DevBuildError) {
+        return res.status(error.statusCode).json({
+          success: false,
+          message: error.message,
+        });
+      }
+
+      return res.status(httpStatus.INTERNAL_SERVER_ERROR).json({
+        success: false,
+        message: error.message || "Failed to load preview",
       });
     }
   },

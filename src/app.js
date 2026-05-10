@@ -43,6 +43,19 @@ app.use(
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(passport.initialize());
 
+// Collapse accidental double slashes (e.g. /api//user/...) so routes still match
+app.use((req, res, next) => {
+  if (typeof req.url === "string" && req.url.includes("//")) {
+    const q = req.url.indexOf("?");
+    const pathPart = q === -1 ? req.url : req.url.slice(0, q);
+    const query = q === -1 ? "" : req.url.slice(q);
+    if (pathPart.includes("//")) {
+      req.url = pathPart.replace(/\/+/g, "/") + query;
+    }
+  }
+  next();
+});
+
 // Routes
 app.use("/api", router);
 app.use("/uploads", express.static("uploads"));

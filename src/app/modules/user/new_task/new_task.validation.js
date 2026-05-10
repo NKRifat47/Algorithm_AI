@@ -23,7 +23,14 @@ const continueTaskSchema = z.object({
   }),
 });
 
+const previewProjectSchema = z.object({
+  body: z.object({
+    project_path: z.string().min(1).max(4000).optional(),
+  }),
+});
+
 export const NewTaskValidation = {
   createTaskSchema,
   continueTaskSchema,
+  previewProjectSchema,
 };

@@ -1,6 +1,7 @@
 import axios from "axios";
 import prisma from "../../../prisma/client.js";
 import { envVars } from "../../../config/env.js";
+import DevBuildError from "../../../lib/DevBuildError.js";
 import fs from "fs";
 import path from "path";
 import { randomUUID } from "crypto";
@@ -113,6 +114,69 @@ export const detectResponseType = (rawContent) => {
 export const getCodebaseFilesFromAiResponse = (rawContent) => {
   const text = getAiOutputText(rawContent);
   return extractCodeFilesFromText(text);
+};
+
+/** Path returned by the AI engine after `/api/generate`, used with `/api/preview`. */
+export const extractProjectPathFromAiContent = (rawContent) => {
+  if (rawContent == null) return null;
+  let parsed = rawContent;
+  if (typeof rawContent === "string") {
+    const t = rawContent.trim();
+    if (!t) return null;
+    try {
+      parsed = JSON.parse(t);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof parsed !== "object" || parsed === null) return null;
+  const result = parsed.data?.result ?? parsed.result ?? parsed;
+  const p =
+    result?.project_path ??
+    result?.projectPath ??
+    parsed.project_path ??
+    parsed.projectPath;
+  if (typeof p !== "string") return null;
+  const s = p.trim();
+  return s.length ? s : null;
+};
+
+/**
+ * AI engine often returns preview URLs bound to loopback on the VPS.
+ * Replace host with AI_PREVIEW_PUBLIC_ORIGIN so clients can reach the VPS.
+ */
+const rewritePreviewEngineResponseForClient = (data) => {
+  const origin = envVars.AI_PREVIEW_PUBLIC_ORIGIN?.trim();
+  if (!origin || data == null || typeof data !== "object") return data;
+
+  const urlStr = data.url;
+  if (typeof urlStr !== "string") return data;
+
+  let preview;
+  let base;
+  try {
+    preview = new URL(urlStr);
+    const normalizedOrigin = origin.replace(/\/$/, "");
+    base = new URL(
+      /^https?:\/\//i.test(normalizedOrigin)
+        ? normalizedOrigin
+        : `http://${normalizedOrigin}`,
+    );
+  } catch {
+    return data;
+  }
+
+  if (preview.hostname !== "127.0.0.1" && preview.hostname !== "localhost") {
+    return data;
+  }
+
+  preview.protocol = base.protocol;
+  preview.hostname = base.hostname;
+  if (base.port) {
+    preview.port = base.port;
+  }
+
+  return { ...data, url: preview.toString() };
 };
 
 const TASK_STEP_NAMES = {
@@ -456,6 +520,77 @@ export const NewTaskService = {
   resolveNewTaskAiRoute,
   detectResponseType,
   getCodebaseFilesFromAiResponse,
+  extractProjectPathFromAiContent,
+  /**
+   * Calls AI engine POST /api/preview with { project_path }.
+   * @param {string} [projectPathOverride] from client; otherwise read from task.content
+   */
+  previewProject: async (userId, taskId, projectPathOverride) => {
+    const task = await prisma.task.findUnique({
+      where: { id: taskId, userId },
+      select: { id: true, content: true },
+    });
+
+    if (!task) {
+      throw new DevBuildError("Task not found or unauthorized", 404);
+    }
+
+    const trimmed =
+      typeof projectPathOverride === "string"
+        ? projectPathOverride.trim()
+        : "";
+    const projectPath =
+      trimmed || extractProjectPathFromAiContent(task.content);
+
+    if (!projectPath) {
+      throw new DevBuildError(
+        "project_path is required, or the task must include project_path from a generate response.",
+        400,
+      );
+    }
+
+    if (projectPath.length > 4000 || projectPath.includes("\0")) {
+      throw new DevBuildError("Invalid project_path", 400);
+    }
+
+    const aiEngineUrl = envVars.AI_ENGINE_URL || "http://localhost:8000";
+
+    try {
+      const response = await axios.post(
+        `${aiEngineUrl}/api/preview`,
+        { project_path: projectPath },
+        {
+          headers: { "Content-Type": "application/json" },
+          timeout: 120_000,
+        },
+      );
+
+      const engineResponse = rewritePreviewEngineResponseForClient(
+        response.data,
+      );
+
+      return {
+        project_path: projectPath,
+        engineResponse,
+      };
+    } catch (error) {
+      console.error(
+        "AI Engine Error (preview):",
+        error.response?.data || error.message,
+      );
+      const status = error.response?.status;
+      const detail =
+        error.response?.data?.detail ||
+        error.response?.data?.message ||
+        error.message;
+      throw new DevBuildError(
+        detail || "Failed to get preview from AI Engine",
+        typeof status === "number" && status >= 400 && status < 600
+          ? status
+          : 502,
+      );
+    }
+  },
   generateTaskPdf: async (userId, taskId) => {
     const task = await prisma.task.findUnique({
       where: { id: taskId, userId },
