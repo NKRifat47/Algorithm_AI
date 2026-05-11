@@ -37,6 +37,7 @@ const removeAiEnginePdfPath = (value) => {
 
 // ---------- Route Handlers ----------
 const createNewTask = async (req, res) => {
+  req.setTimeout(600_000);
   const userId = req.user.id;
   let charged = false;
   try {
@@ -238,6 +239,7 @@ const getTaskById = async (req, res) => {
 };
 
 const continueTask = async (req, res) => {
+  req.setTimeout(600_000);
   const userId = req.user.id;
   let charged = false;
   try {

@@ -286,6 +286,7 @@ const handleNewTask = async (userId, payload) => {
       aiRequestBody,
       {
         headers: { "Content-Type": "application/json" },
+        timeout: 600_000,
       },
     );
 
@@ -473,6 +474,7 @@ const continueTask = async (userId, taskId, newPrompt, providedSessionId) => {
       aiRequestBody,
       {
         headers: { "Content-Type": "application/json" },
+        timeout: 600_000,
       },
     );
 
