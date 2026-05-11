@@ -9,7 +9,6 @@ import {
 } from "../../../utils/credits.js";
 import { formatAiResponseObject } from "../../../utils/aiResponseFormatter.js";
 
-
 // ---------- Local Helpers ----------
 const parseIfJsonString = (value) => {
   if (typeof value !== "string") return value;
@@ -144,7 +143,7 @@ const getNewTaskData = async (req, res) => {
     return res.status(httpStatus.OK).json({
       success: true,
       message: "Dashboard data fetched successfully",
-      data: result,
+      data: formatAiResponseObject(result),
     });
   } catch (error) {
     console.error("getNewTaskData error:", error);
@@ -170,10 +169,56 @@ const getTaskById = async (req, res) => {
 
     const result = await NewTaskService.getTaskById(userId, id);
 
+    const responseType = NewTaskService.detectResponseType
+      ? NewTaskService.detectResponseType(result.content)?.type
+      : "text";
+
+    const codeFiles =
+      responseType === "codebase" &&
+      NewTaskService.getCodebaseFilesFromAiResponse
+        ? NewTaskService.getCodebaseFilesFromAiResponse(result.content)
+        : [];
+
     return res.status(httpStatus.OK).json({
       success: true,
       message: "Task fetched successfully",
-      data: result,
+      data: {
+        taskId: result.id,
+        status: result.status,
+        prompt: result.prompt,
+        session_id: result.session_id,
+        // We parse the content string from DB and then structure it
+        aiResponse: formatAiResponseObject(
+          removeAiEnginePdfPath(parseIfJsonString(result.content)),
+        ),
+        aiResponseRaw:
+          typeof result.content === "string" ? result.content : null,
+        responseType,
+        messages: formatAiResponseObject(
+          (result.messages || []).map((m) => ({
+            ...m,
+            content: parseIfJsonString(m.content),
+          })),
+        ),
+        pdf: {
+          generated: false,
+          generateUrl: `/api/user/new-task/${result.id}/pdf`,
+          downloadUrl: `/api/user/new-task/${result.id}/pdf/download`,
+        },
+        codebase: {
+          generated: false,
+          files: codeFiles,
+          generateUrl: `/api/user/new-task/${result.id}/codebase`,
+          downloadUrl: `/api/user/new-task/${result.id}/codebase/download`,
+        },
+        preview: {
+          previewUrl: `/api/user/new-task/${result.id}/preview`,
+          projectPath:
+            NewTaskService.extractProjectPathFromAiContent(result.content) ??
+            null,
+        },
+        createdAt: result.createdAt,
+      },
     });
   } catch (error) {
     console.error("getTaskById error:", error);

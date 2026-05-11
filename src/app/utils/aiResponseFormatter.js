@@ -122,16 +122,30 @@ export const formatAiResponseObject = (obj) => {
   }
 
   const result = { ...obj };
-  const targetFields = ["response", "output", "result"];
+  const targetFields = ["response", "output", "result", "content"];
 
   for (const key in result) {
     if (targetFields.includes(key) && typeof result[key] === "string") {
-      result[`structured_${key}`] = formatStructuredResponse(result[key]);
-      // We also update the original field if it's purely a markdown string
-      // But to be safe and backward compatible, let's just add the structured version
-      // The user specifically asked to make the "response" field structured.
-      // So let's overwrite it as well.
-      result[key] = formatStructuredResponse(result[key]);
+      const trimmed = result[key].trim();
+      let parsed = result[key];
+      
+      // Try to parse as JSON if it looks like an object or array
+      if (trimmed.startsWith("{") || trimmed.startsWith("[")) {
+        try {
+          parsed = JSON.parse(trimmed);
+        } catch (e) {
+          // Not valid JSON, keep as string
+        }
+      }
+
+      if (typeof parsed === "object" && parsed !== null) {
+        // If it was JSON, recurse into the parsed object
+        result[key] = formatAiResponseObject(parsed);
+      } else {
+        // If it's a regular string, apply structured formatting
+        result[`structured_${key}`] = formatStructuredResponse(result[key]);
+        result[key] = formatStructuredResponse(result[key]);
+      }
     } else if (typeof result[key] === "object") {
       result[key] = formatAiResponseObject(result[key]);
     }
