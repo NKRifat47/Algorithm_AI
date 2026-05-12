@@ -35,6 +35,55 @@ const removeAiEnginePdfPath = (value) => {
   return cloned;
 };
 
+const mapTaskToStandardStructure = (task, promptOverride) => {
+  const responseType = NewTaskService.detectResponseType
+    ? NewTaskService.detectResponseType(task.content)?.type
+    : "text";
+
+  const codeFiles =
+    responseType === "codebase" &&
+    NewTaskService.getCodebaseFilesFromAiResponse
+      ? NewTaskService.getCodebaseFilesFromAiResponse(task.content)
+      : [];
+
+  const latestUserMessage = (task.messages || [])
+    .filter((m) => m.role === "user")
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+
+  return {
+    taskId: task.id,
+    status: task.status,
+    prompt: promptOverride || (latestUserMessage ? latestUserMessage.content : task.prompt),
+    session_id: task.session_id,
+    aiInitialRoute: task.aiInitialRoute,
+    aiResponse:
+      responseType === "text"
+        ? formatAiResponseObject(
+            removeAiEnginePdfPath(parseIfJsonString(task.content)),
+          )
+        : removeAiEnginePdfPath(parseIfJsonString(task.content)),
+    aiResponseRaw: typeof task.content === "string" ? task.content : null,
+    responseType,
+    pdf: {
+      generated: false,
+      generateUrl: `/api/user/new-task/${task.id}/pdf`,
+      downloadUrl: `/api/user/new-task/${task.id}/pdf/download`,
+    },
+    codebase: {
+      generated: false,
+      files: codeFiles,
+      generateUrl: `/api/user/new-task/${task.id}/codebase`,
+      downloadUrl: `/api/user/new-task/${task.id}/codebase/download`,
+    },
+    preview: {
+      previewUrl: `/api/user/new-task/${task.id}/preview`,
+      projectPath:
+        NewTaskService.extractProjectPathFromAiContent(task.content) ?? null,
+    },
+    createdAt: task.createdAt,
+  };
+};
+
 // ---------- Route Handlers ----------
 const createNewTask = async (req, res) => {
   req.setTimeout(600_000);
@@ -70,42 +119,7 @@ const createNewTask = async (req, res) => {
     return res.status(httpStatus.CREATED).json({
       success: true,
       message: "Task created and AI responded successfully",
-      data: {
-        taskId: result.id,
-        status: result.status,
-        prompt: result.prompt,
-        session_id: result.session_id,
-        aiInitialRoute: result.aiInitialRoute,
-        aiResponse:
-          responseType === "text"
-            ? formatAiResponseObject(
-                removeAiEnginePdfPath(parseIfJsonString(result.content)),
-              )
-            : removeAiEnginePdfPath(parseIfJsonString(result.content)),
-        aiResponseRaw:
-
-          typeof result.content === "string" ? result.content : null,
-        responseType,
-        pdf: {
-          generated: false,
-          generateUrl: `/api/user/new-task/${result.id}/pdf`,
-          downloadUrl: `/api/user/new-task/${result.id}/pdf/download`,
-        },
-        codebase: {
-          // frontend can show this button only when responseType === "codebase"
-          generated: false,
-          files: codeFiles,
-          generateUrl: `/api/user/new-task/${result.id}/codebase`,
-          downloadUrl: `/api/user/new-task/${result.id}/codebase/download`,
-        },
-        preview: {
-          previewUrl: `/api/user/new-task/${result.id}/preview`,
-          projectPath:
-            NewTaskService.extractProjectPathFromAiContent(result.content) ??
-            null,
-        },
-        createdAt: result.createdAt,
-      },
+      data: mapTaskToStandardStructure(result),
     });
   } catch (error) {
     console.error("createNewTask error:", error);
@@ -144,7 +158,11 @@ const getNewTaskData = async (req, res) => {
     return res.status(httpStatus.OK).json({
       success: true,
       message: "Dashboard data fetched successfully",
-      data: formatAiResponseObject(result),
+      data: {
+        profile: result.profile,
+        projects: result.projects,
+        tasks: (result.tasks || []).map(mapTaskToStandardStructure),
+      },
     });
   } catch (error) {
     console.error("getNewTaskData error:", error);
@@ -170,56 +188,10 @@ const getTaskById = async (req, res) => {
 
     const result = await NewTaskService.getTaskById(userId, id);
 
-    const responseType = NewTaskService.detectResponseType
-      ? NewTaskService.detectResponseType(result.content)?.type
-      : "text";
-
-    const codeFiles =
-      responseType === "codebase" &&
-      NewTaskService.getCodebaseFilesFromAiResponse
-        ? NewTaskService.getCodebaseFilesFromAiResponse(result.content)
-        : [];
-
     return res.status(httpStatus.OK).json({
       success: true,
-      message: "Task fetched successfully",
-      data: {
-        taskId: result.id,
-        status: result.status,
-        prompt: result.prompt,
-        session_id: result.session_id,
-        // We parse the content string from DB and then structure it
-        aiResponse: formatAiResponseObject(
-          removeAiEnginePdfPath(parseIfJsonString(result.content)),
-        ),
-        aiResponseRaw:
-          typeof result.content === "string" ? result.content : null,
-        responseType,
-        messages: formatAiResponseObject(
-          (result.messages || []).map((m) => ({
-            ...m,
-            content: parseIfJsonString(m.content),
-          })),
-        ),
-        pdf: {
-          generated: false,
-          generateUrl: `/api/user/new-task/${result.id}/pdf`,
-          downloadUrl: `/api/user/new-task/${result.id}/pdf/download`,
-        },
-        codebase: {
-          generated: false,
-          files: codeFiles,
-          generateUrl: `/api/user/new-task/${result.id}/codebase`,
-          downloadUrl: `/api/user/new-task/${result.id}/codebase/download`,
-        },
-        preview: {
-          previewUrl: `/api/user/new-task/${result.id}/preview`,
-          projectPath:
-            NewTaskService.extractProjectPathFromAiContent(result.content) ??
-            null,
-        },
-        createdAt: result.createdAt,
-      },
+      message: "AI response received and conversation updated",
+      data: mapTaskToStandardStructure(result),
     });
   } catch (error) {
     console.error("getTaskById error:", error);
@@ -279,31 +251,7 @@ const continueTask = async (req, res) => {
     return res.status(httpStatus.OK).json({
       success: true,
       message: "AI response received and conversation updated",
-      data: {
-        ...result,
-        // For continue, reflect the latest user prompt in the response payload.
-        prompt,
-        session_id: result.session_id,
-        content:
-          responseType === "text"
-            ? formatAiResponseObject(parseIfJsonString(result.content))
-            : parseIfJsonString(result.content),
-        contentRaw: typeof result.content === "string" ? result.content : null,
-
-        responseType,
-        codebase: {
-          generated: false,
-          files: codeFiles,
-          generateUrl: `/api/user/new-task/${result.id}/codebase`,
-          downloadUrl: `/api/user/new-task/${result.id}/codebase/download`,
-        },
-        preview: {
-          previewUrl: `/api/user/new-task/${result.id}/preview`,
-          projectPath:
-            NewTaskService.extractProjectPathFromAiContent(result.content) ??
-            null,
-        },
-      },
+      data: mapTaskToStandardStructure(result, prompt),
     });
   } catch (error) {
     console.error("continueTask error:", error);

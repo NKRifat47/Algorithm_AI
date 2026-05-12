@@ -368,10 +368,21 @@ const getNewTaskData = async (userId) => {
       prompt: true,
       content: true,
       createdAt: true,
+      steps: {
+        where: { stepName: TASK_STEP_NAMES.AI_SESSION },
+        orderBy: { createdAt: "desc" },
+        take: 1,
+      },
     },
     orderBy: { createdAt: "desc" },
     take: 10,
   });
+
+  const formattedTasks = tasks.map((t) => ({
+    ...t,
+    session_id: t.steps?.[0]?.output || null,
+    steps: undefined, // Clean up
+  }));
 
   return {
     profile: {
@@ -381,7 +392,7 @@ const getNewTaskData = async (userId) => {
       credits: user.credits,
     },
     projects,
-    tasks,
+    tasks: formattedTasks,
   };
 };
 
@@ -406,6 +417,7 @@ const getTaskById = async (userId, taskId) => {
   return {
     ...task,
     session_id: sessionId,
+    aiInitialRoute: task.content ? resolveNewTaskAiRoute(task.prompt) : null,
   };
 };
 
@@ -492,6 +504,7 @@ const continueTask = async (userId, taskId, newPrompt, providedSessionId) => {
     });
 
     updatedTask.session_id = sessionId;
+    updatedTask.aiInitialRoute = aiRoute;
 
     // 6. Save AI's response message
     await prisma.message.create({
