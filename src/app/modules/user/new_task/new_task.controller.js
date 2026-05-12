@@ -56,12 +56,10 @@ const mapTaskToStandardStructure = (task, promptOverride) => {
     prompt: promptOverride || (latestUserMessage ? latestUserMessage.content : task.prompt),
     session_id: task.session_id,
     aiInitialRoute: task.aiInitialRoute,
-    aiResponse:
-      responseType === "text"
-        ? formatAiResponseObject(
-            removeAiEnginePdfPath(parseIfJsonString(task.content)),
-          )
-        : removeAiEnginePdfPath(parseIfJsonString(task.content)),
+    aiResponse: formatAiResponseObject(
+      removeAiEnginePdfPath(parseIfJsonString(task.content)),
+      { excludeFields: responseType === "codebase" ? ["output"] : [] },
+    ),
     aiResponseRaw: typeof task.content === "string" ? task.content : null,
     responseType,
     pdf: {

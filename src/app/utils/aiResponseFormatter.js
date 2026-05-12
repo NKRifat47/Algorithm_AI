@@ -110,22 +110,29 @@ export const formatStructuredResponse = (text) => {
 };
 
 /**
- * Deeply traverses an object and formats any "response" or "output" string fields.
+ * Deeply traverses an object and formats any "response", "output", or "summary" string fields.
  * @param {any} obj The object to transform.
+ * @param {object} [options] Formatting options.
+ * @param {string[]} [options.excludeFields] Fields to skip.
  * @returns {any} The transformed object.
  */
-export const formatAiResponseObject = (obj) => {
+export const formatAiResponseObject = (obj, options = {}) => {
+  const { excludeFields = [] } = options;
   if (!obj || typeof obj !== "object") return obj;
 
   if (Array.isArray(obj)) {
-    return obj.map(formatAiResponseObject);
+    return obj.map((item) => formatAiResponseObject(item, options));
   }
 
   const result = { ...obj };
-  const targetFields = ["response", "output", "result", "content"];
+  const targetFields = ["response", "output", "result", "content", "summary"];
 
   for (const key in result) {
-    if (targetFields.includes(key) && typeof result[key] === "string") {
+    if (
+      targetFields.includes(key) &&
+      !excludeFields.includes(key) &&
+      typeof result[key] === "string"
+    ) {
       const trimmed = result[key].trim();
       let parsed = result[key];
       
@@ -147,7 +154,7 @@ export const formatAiResponseObject = (obj) => {
         result[key] = formatStructuredResponse(result[key]);
       }
     } else if (typeof result[key] === "object") {
-      result[key] = formatAiResponseObject(result[key]);
+      result[key] = formatAiResponseObject(result[key], options);
     }
   }
 
