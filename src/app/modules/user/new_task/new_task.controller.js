@@ -161,7 +161,7 @@ const getNewTaskData = async (req, res) => {
       data: {
         profile: result.profile,
         projects: result.projects,
-        tasks: (result.tasks || []).map(mapTaskToStandardStructure),
+        tasks: (result.tasks || []).map((task) => mapTaskToStandardStructure(task)),
       },
     });
   } catch (error) {
