@@ -193,9 +193,10 @@ const PROJECT_INTENT_PATTERNS = [
   /\bhomepage\b/i,
   /\be-?commerce\b/i,
   /\bonline\s+store\b/i,
-  /\b(build|create|design|make|develop)\b[\s\S]{0,120}\b(website|web\s*app|web\s*site|application|portfolio|dashboard|store|blog|landing\s+page|homepage|saas|codebase|project)\b/i,
+  /\b(build|create|design|make|develop|generate)\b[\s\S]{0,120}\b(website|web\s*app|web\s*site|application|portfolio|dashboard|store|blog|landing\s+page|homepage|saas|codebase|project|slide|slides|presentation)\b/i,
   /\b(next\.?js|nuxt|sveltekit|astro|react\s+project|vue\s+project|angular\s+app|full[\s-]?stack\s+(site|app))\b/i,
   /\b(codebase|repository|repo|boilerplate|source\s*code)\b/i,
+  /\b(make|generate|create|design)\s+slides?\b/i,
 ];
 
 const inferInitialAiRouteFromPrompt = (prompt) => {
