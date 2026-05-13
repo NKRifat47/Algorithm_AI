@@ -61,6 +61,15 @@ const mapTaskToStandardStructure = (task, promptOverride) => {
       { excludeFields: responseType === "codebase" ? ["output"] : [] },
     ),
     aiResponseRaw: typeof task.content === "string" ? task.content : null,
+    messages: (task.messages || []).map((msg) => ({
+      role: msg.role,
+      content: formatAiResponseObject(
+        msg.role === "assistant"
+          ? removeAiEnginePdfPath(parseIfJsonString(msg.content))
+          : parseIfJsonString(msg.content),
+      ),
+      createdAt: msg.createdAt,
+    })),
     responseType,
     pdf: {
       generated: false,
