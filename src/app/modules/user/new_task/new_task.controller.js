@@ -79,6 +79,7 @@ const mapTaskToStandardStructure = (task, promptOverride) => {
         NewTaskService.extractProjectPathFromAiContent(task.content) ?? null,
     },
     createdAt: task.createdAt,
+    messages: task.messages || [],
   };
 };
 

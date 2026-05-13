@@ -316,7 +316,18 @@ const handleNewTask = async (userId, payload) => {
       },
     });
 
-    return updatedTask;
+    // Re-fetch to include messages for the controller mapping
+    const finalTask = await prisma.task.findUnique({
+      where: { id: task.id },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
+
+    if (finalTask) {
+      finalTask.session_id = sessionId;
+      finalTask.aiInitialRoute = initialAiRoute;
+    }
+
+    return finalTask || updatedTask;
   } catch (error) {
     console.error("AI Engine Error:", error.response?.data || error.message);
 
@@ -516,7 +527,18 @@ const continueTask = async (userId, taskId, newPrompt, providedSessionId) => {
       },
     });
 
-    return updatedTask;
+    // Re-fetch to include messages for the controller mapping
+    const finalTask = await prisma.task.findUnique({
+      where: { id: taskId },
+      include: { messages: { orderBy: { createdAt: "asc" } } },
+    });
+
+    if (finalTask) {
+      finalTask.session_id = sessionId;
+      finalTask.aiInitialRoute = aiRoute;
+    }
+
+    return finalTask || updatedTask;
   } catch (error) {
     console.error(
       "AI Engine Error (Continue):",
