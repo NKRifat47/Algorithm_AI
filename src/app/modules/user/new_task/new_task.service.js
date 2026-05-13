@@ -686,7 +686,11 @@ export const NewTaskService = {
         const output =
           parsed?.data?.result?.formatted_results?.[0]?.output ??
           parsed?.data?.result?.output ??
+          parsed?.data?.response ??
+          parsed?.data?.output ??
+          parsed?.response ??
           parsed?.output;
+
         if (typeof output === "string" && output.trim()) return output;
         return JSON.stringify(parsed, null, 2);
       } catch {
@@ -709,21 +713,10 @@ export const NewTaskService = {
 
       doc.pipe(stream);
 
-      doc.fontSize(18).text(task.title || "AI Report", { align: "left" });
-      doc.moveDown(0.5);
-      doc.fontSize(10).fillColor("#666").text(`Task ID: ${task.id}`);
-      doc.moveDown(0.25);
-      doc.text(`Created: ${task.createdAt?.toISOString?.() ?? ""}`);
-      doc.moveDown();
+      doc.fontSize(20).text(task.title || "AI Report", { align: "left" });
+      doc.moveDown(1.5);
 
-      doc.fillColor("#000").fontSize(12).text("Prompt", { underline: true });
-      doc.moveDown(0.25);
-      doc.fontSize(11).text(task.prompt || "");
-      doc.moveDown();
-
-      doc.fontSize(12).text("Answer", { underline: true });
-      doc.moveDown(0.25);
-      doc.fontSize(11).text(pdfText || "");
+      doc.fontSize(12).text(pdfText || "");
 
       doc.end();
     });
