@@ -637,22 +637,30 @@ export const NewTaskService = {
       );
     }
   },
-  generateTaskPdf: async (userId, taskId) => {
-    const task = await prisma.task.findUnique({
-      where: { id: taskId, userId },
+  generateTaskPdf: async (userId, messageId) => {
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      include: { task: true },
     });
 
-    if (!task) {
-      throw new Error("Task not found or unauthorized");
+    if (!message || message.task.userId !== userId) {
+      throw new Error("Message not found or unauthorized");
     }
 
-    if (!task.content) {
-      throw new Error("Task has no AI content to export");
+    const task = message.task;
+    const taskId = task.id;
+    const contentToUse = message.content;
+
+    if (!contentToUse) {
+      throw new Error("Message has no content to export");
     }
 
-    // If we already generated a PDF for this task, reuse it.
+    // Use a specific step name if messageId is provided to allow multiple PDFs per task
+    const stepName = messageId ? `PDF_EXPORT_${messageId}` : "PDF_EXPORT";
+
+    // If we already generated a PDF for this specific target, reuse it.
     const existingStep = await prisma.taskStep.findFirst({
-      where: { taskId, stepName: "PDF_EXPORT" },
+      where: { taskId, stepName },
       orderBy: { createdAt: "desc" },
     });
 
@@ -660,6 +668,7 @@ export const NewTaskService = {
       const existingAbs = path.resolve(process.cwd(), existingStep.output);
       if (fs.existsSync(existingAbs)) {
         return {
+          taskId,
           pdfPath: existingStep.output,
           alreadyExisted: true,
         };
@@ -671,7 +680,10 @@ export const NewTaskService = {
       fs.mkdirSync(uploadsDir, { recursive: true });
     }
 
-    const fileName = `task-${taskId}-${Date.now()}.pdf`;
+    const fileName = messageId
+      ? `task-${taskId}-msg-${messageId}.pdf`
+      : `task-${taskId}-${Date.now()}.pdf`;
+
     const relativePdfPath = path.join("uploads", "task-pdfs", fileName);
     const absolutePdfPath = path.join(uploadsDir, fileName);
 
@@ -698,7 +710,7 @@ export const NewTaskService = {
       }
     };
 
-    const pdfText = extractText(task.content);
+    const pdfText = extractText(contentToUse);
 
     // Write PDF to disk
     await new Promise((resolve, reject) => {
@@ -713,9 +725,6 @@ export const NewTaskService = {
 
       doc.pipe(stream);
 
-      doc.fontSize(20).text(task.title || "AI Report", { align: "left" });
-      doc.moveDown(1.5);
-
       doc.fontSize(12).text(pdfText || "");
 
       doc.end();
@@ -725,34 +734,38 @@ export const NewTaskService = {
     await prisma.taskStep.create({
       data: {
         taskId,
-        stepName: "PDF_EXPORT",
+        stepName,
         status: "COMPLETED",
         output: relativePdfPath,
       },
     });
 
     return {
+      taskId,
       pdfPath: relativePdfPath,
       alreadyExisted: false,
     };
   },
-  getTaskPdfPath: async (userId, taskId) => {
-    const task = await prisma.task.findUnique({
-      where: { id: taskId, userId },
-      select: { id: true },
+  getTaskPdfPath: async (userId, messageId) => {
+    const message = await prisma.message.findUnique({
+      where: { id: messageId },
+      include: { task: true },
     });
 
-    if (!task) {
-      throw new Error("Task not found or unauthorized");
+    if (!message || message.task.userId !== userId) {
+      throw new Error("Message not found or unauthorized");
     }
 
+    const taskId = message.task.id;
+    const stepName = `PDF_EXPORT_${messageId}`;
+
     const step = await prisma.taskStep.findFirst({
-      where: { taskId, stepName: "PDF_EXPORT", status: "COMPLETED" },
+      where: { taskId, stepName, status: "COMPLETED" },
       orderBy: { createdAt: "desc" },
     });
 
     if (!step?.output) {
-      throw new Error("PDF not generated yet");
+      throw new Error("PDF not generated yet for this message");
     }
 
     const absolutePdfPath = path.resolve(process.cwd(), step.output);
@@ -763,6 +776,7 @@ export const NewTaskService = {
     return {
       absolutePdfPath,
       relativePdfPath: step.output,
+      taskId,
     };
   },
   generateTaskCodebaseZip: async (userId, taskId) => {

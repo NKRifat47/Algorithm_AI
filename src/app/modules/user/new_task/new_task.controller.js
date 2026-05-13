@@ -50,8 +50,13 @@ const mapTaskToStandardStructure = (task, promptOverride) => {
     .filter((m) => m.role === "user")
     .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
 
+  const latestAssistantMessage = (task.messages || [])
+    .filter((m) => m.role === "assistant")
+    .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))[0];
+
   return {
     taskId: task.id,
+    messageId: latestAssistantMessage ? latestAssistantMessage.id : null,
     status: task.status,
     prompt: promptOverride || (latestUserMessage ? latestUserMessage.content : task.prompt),
     session_id: task.session_id,
@@ -290,9 +295,10 @@ export const NewTaskController = {
   generateTaskPdf: async (req, res) => {
     const userId = req.user.id;
     try {
-      const { id: taskId } = req.params;
+      const { id: messageId } = req.params;
 
-      const result = await NewTaskService.generateTaskPdf(userId, taskId);
+      const result = await NewTaskService.generateTaskPdf(userId, messageId);
+      const taskId = result.taskId;
 
       if (!result.alreadyExisted) {
         await chargeCredits(prisma, userId, {
@@ -334,14 +340,14 @@ export const NewTaskController = {
   downloadTaskPdf: async (req, res) => {
     try {
       const userId = req.user.id;
-      const { id: taskId } = req.params;
+      const { id: messageId } = req.params;
 
-      const { absolutePdfPath } = await NewTaskService.getTaskPdfPath(
+      const { absolutePdfPath, taskId } = await NewTaskService.getTaskPdfPath(
         userId,
-        taskId,
+        messageId,
       );
 
-      return res.download(absolutePdfPath, `task-${taskId}.pdf`);
+      return res.download(absolutePdfPath, `task-${taskId}-response.pdf`);
     } catch (error) {
       console.error("downloadTaskPdf error:", error);
 
